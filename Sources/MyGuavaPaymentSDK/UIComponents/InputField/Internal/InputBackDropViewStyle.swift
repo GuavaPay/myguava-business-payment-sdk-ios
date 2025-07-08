@@ -1,0 +1,28 @@
+//
+//  InputBackDropViewStyle.swift
+//  
+//
+//  Created by Mikhail Kirillov on 18/6/24.
+//
+
+import UIKit
+
+extension InputBackDropView {
+
+    public protocol Style: BackgroundColor, CornerRadius, BorderWidth, BorderColor, Padding {
+    }
+
+    public struct StockStyle: Style {
+        public var padding: UIEdgeInsets = .init(top: .spacing100,
+                                                 left: .spacing400,
+                                                 bottom: .spacing100,
+                                                 right: .spacing200)
+
+        public var backgroundColor: UIColor = .gray200
+        public var cornerRadius: CGFloat = .radius200
+        public var borderWidth: CGFloat = 1
+        public var borderColor: UIColor = .input.borderRest
+    }
+}
+
+

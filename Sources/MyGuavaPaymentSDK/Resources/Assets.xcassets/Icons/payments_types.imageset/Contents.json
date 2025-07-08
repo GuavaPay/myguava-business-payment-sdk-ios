@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "payments_types.svg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

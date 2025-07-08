@@ -4,25 +4,40 @@
 import PackageDescription
 
 let package = Package(
-    name: "GuavapayPaymentSDK",
+    name: "MyGuavaPaymentSDK",
     defaultLocalization: "en",
     platforms: [.iOS(.v13)],
     products: [
         .library(
-            name: "GuavapayPaymentSDK",
-            targets: ["GuavapayPaymentSDK"]
+            name: "MyGuavaPaymentSDK",
+            targets: ["MyGuavaPaymentSDK"]
         ),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.3.2"),
+        .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
+        .package(url: "https://github.com/marmelroy/PhoneNumberKit", from: "3.7.7"),
+        .package(url: "https://github.com/GuavaPay/myguava-business-3ds-sdk-ios", from: "0.0.1"),
+        .package(url: "https://github.com/Juanpe/SkeletonView.git", from: "1.30.4"),
+    ],
     targets: [
         .target(
-            name: "GuavapayPaymentSDK",
-            path: "Sources/GuavapayPaymentSDK",
-            exclude: []
+            name: "MyGuavaPaymentSDK",
+            dependencies: [
+                .product(name: "Kingfisher", package: "Kingfisher"),
+                .product(name: "SnapKit", package: "SnapKit"),
+                .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
+                .product(name: "Guavapay3DS2", package: "myguava-business-3ds-sdk-ios"),
+                .product(name: "SwiftGuavapay3DS2", package: "myguava-business-3ds-sdk-ios"),
+                .product(name: "SkeletonView", package: "SkeletonView"),
+            ],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
-            name: "GuavapayPaymentSDKTests",
-            dependencies: ["GuavapayPaymentSDK"]
+            name: "MyGuavaPaymentSDKTests",
+            dependencies: ["MyGuavaPaymentSDK"]
         ),
     ],
     swiftLanguageModes: [.v5]
