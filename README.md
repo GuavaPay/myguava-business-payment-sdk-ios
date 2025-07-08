@@ -42,13 +42,12 @@ To support secure WebSocket connections used by the SDK, add to your app’s Inf
 
 2. Apple Pay Setup
 
-If you want to use Apple Pay, enable the Apple Pay capability for your target in Xcode.  
-Add your Merchant IDs in **Signing & Capabilities  →  Apple Pay**:
-- `merchant.com.guavapay.apay`
-- `merchant.com.guavapay.epg`
-- `merchant.com.guavapay.gptrm`
+Follow the official [Apple Pay instruction](https://developer.apple.com/documentation/passkit/setting-up-apple-pay).
 
-You can add all listed Merchant IDs or only those required for your integration.
+Pass the processing certificate and merchant ID created during the procedure to MyGuava Business support for successful integration.
+
+> **_NOTE:_** UnionPay is not supported by the current version of MyGuava Payment iOS SDK.
+
 
 ## Initialization & Usage
 
@@ -72,11 +71,9 @@ To configure supported payment methods pass your lists of:
     - `.mastercard`
     - `.unionpay`
     - `.americanExpress`
-    - `.dinersClub`
 - **availablePaymentMethods**: `[PaymentMethod]`
     - `.paymentCard`
     - `.applePay`
-    - `.paymentCardBinding`
 - **availableCardProductCategories**: `[PaymentCardProductCategory]`
     - `.debit`
     - `.credit`
@@ -86,6 +83,13 @@ These parameters are typically obtained from your backend by creating an order.
 If you need to restrict available methods, card schemes, or product categories, pass the optional parameters in `PaymentConfig`.
 
 ### Example: Creating an Order and Presenting the Payment Sheet
+
+> **_WARNING_**:
+> Register orders using your backed.
+> 
+> Do not pass the API key to the mobile client. Only the session token and order ID created on order registration must be passed to the mobile client.
+
+
 
 ```swift
 networkService.createOrder(amount: 10.09, currency: "GBP") { [weak self] result in
@@ -106,8 +110,8 @@ networkService.createOrder(amount: 10.09, currency: "GBP") { [weak self] result 
             self // Your view controller that implements PaymentDelegate
         )
 
-        paymentBottomSheetVC.modalPresentationStyle = .overFullScreen
-        self?.present(paymentBottomSheetVC, animated: false, completion: nil)
+        paymentBottomSheetVC.modalPresentationStyle = .overFullScreen         // mandatory step
+        self?.present(paymentBottomSheetVC, animated: false, completion: nil) // animated: false is mandatory too
 
     case .failure(let error):
         print("Error: \(error)")
@@ -126,10 +130,6 @@ extension YourViewController: PaymentDelegate {
         // in `SuccessfulDataModel.orderStatus: OrderStatus`
     }
 
-    func handlePaymentApplePayResult(_ result: Result<OrderStatus, OrderStatusError>) {
-        // Handle Apple Pay specific result
-    }
-
     func handlePaymentCancel() {
         // Handle user cancellation
     }
@@ -140,8 +140,8 @@ extension YourViewController: PaymentDelegate {
 }
 ```
 
-> Note:
-> - All payment method options (New Card, Saved Card, Apple Pay) are available by default.
+> **_NOTE_**:
+> - All payment method options (Payment Card, Apple Pay) are available by default.
 > - The set of available options can be customized via PaymentConfig if needed.
 > - You only need to implement PaymentDelegate to receive payment callbacks.
 
@@ -153,5 +153,5 @@ just set up your config and implement the delegate for full payment flow support
 
 ### Environment Switching
 
-The SDK supports different environments (sandbox, production, development).  
+The SDK supports different environments (sandbox, production).  
 You can switch environments via the environment parameter in PaymentConfig.
