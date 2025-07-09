@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.3.2"),
         .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
         .package(url: "https://github.com/marmelroy/PhoneNumberKit", from: "3.7.7"),
-        .package(url: "https://github.com/GuavaPay/myguava-business-3ds-sdk-ios", from: "0.0.1"),
+        .package(url: "https://github.com/GuavaPay/Guavapay3DS2", from: "0.0.1"),
         .package(url: "https://github.com/Juanpe/SkeletonView.git", from: "1.30.4"),
     ],
     targets: [
@@ -27,8 +27,8 @@ let package = Package(
                 .product(name: "Kingfisher", package: "Kingfisher"),
                 .product(name: "SnapKit", package: "SnapKit"),
                 .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
-                .product(name: "Guavapay3DS2", package: "myguava-business-3ds-sdk-ios"),
-                .product(name: "SwiftGuavapay3DS2", package: "myguava-business-3ds-sdk-ios"),
+                .product(name: "Guavapay3DS2", package: "Guavapay3DS2"),
+                .product(name: "SwiftGuavapay3DS2", package: "Guavapay3DS2"),
                 .product(name: "SkeletonView", package: "SkeletonView"),
             ],
             resources: [

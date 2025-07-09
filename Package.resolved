@@ -1,22 +1,22 @@
 {
-  "originHash" : "1022d69df2cfc3beb1a8b95e0924d5be0fea02650f9f29e9dbccdb5b348ce98a",
+  "originHash" : "5a6641502027437edb2e85b9882fe9835b386a6295613b8d915d8f0580ad56bd",
   "pins" : [
+    {
+      "identity" : "guavapay3ds2",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/GuavaPay/Guavapay3DS2",
+      "state" : {
+        "revision" : "cc061aa337513a9cedc50f1f050b09d55798d6e4",
+        "version" : "0.0.3"
+      }
+    },
     {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher.git",
       "state" : {
-        "revision" : "7deda23bbdca612076c5c315003d8638a08ed0f1",
-        "version" : "8.3.2"
-      }
-    },
-    {
-      "identity" : "myguava-business-3ds-sdk-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/GuavaPay/myguava-business-3ds-sdk-ios",
-      "state" : {
-        "revision" : "3783bc9514cd0790f923a8295026c6644fefb36d",
-        "version" : "0.0.1"
+        "revision" : "ef40458c27ccc65aec62c0cc65da296e07264ffd",
+        "version" : "8.4.0"
       }
     },
     {
