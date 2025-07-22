@@ -9,13 +9,17 @@ import UIKit
 
 final class NewCardCell: UITableViewCell {
 
+    var onChangeDigits: ((String) -> Void)?
+    var onFieldEndEditing: ((CardInformationView.Field) -> Void)?
     var onSaveCardTapped: (() -> Void)?
+    var onScanButtonTapped: (() -> Void)?
 
     private let cardInformationView = CardInformationView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
+        bindActions()
     }
 
     required init?(coder: NSCoder) {
@@ -31,9 +35,19 @@ final class NewCardCell: UITableViewCell {
         cardInformationView.snp.makeConstraints {
             $0.directionalEdges.equalToSuperview()
         }
-
+    }
+    
+    private func bindActions() {
         cardInformationView.onSaveCardTapped = { [weak self] in
             self?.onSaveCardTapped?()
+        }
+        
+        cardInformationView.cardNumberView.onChangeDigits = { [weak self] digits in
+            self?.onChangeDigits?(digits)
+        }
+        
+        cardInformationView.onFieldEndEditing = { [weak self] field in
+            self?.onFieldEndEditing?(field)
         }
     }
 }

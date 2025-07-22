@@ -20,7 +20,7 @@ public class SelectCountryCodeTableViewCell: UITableViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .body2Regular
-        label.textColor = .foreground.onAccent
+        label.textColor = UICustomization.Label.textColor
         label.numberOfLines = 0
         return label
     }()
@@ -28,7 +28,7 @@ public class SelectCountryCodeTableViewCell: UITableViewCell {
     private let phoneCodeLabel: UILabel = {
         let label = UILabel()
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
+        label.textColor = UICustomization.Label.secondaryTextColor
         return label
     }()
 
@@ -75,7 +75,7 @@ public class SelectCountryCodeTableViewCell: UITableViewCell {
     }
 
     private func configureAddSubviews() {
-        backgroundColor = .background.primary
+        backgroundColor = UICustomization.Common.backgroundColor
         selectionStyle = .none
         contentView.addSubviews(
             flagImageView,

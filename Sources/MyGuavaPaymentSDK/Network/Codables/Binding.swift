@@ -21,8 +21,10 @@ struct Binding: Codable, Equatable {
     let product: Product?
     
     var isEnabled: Bool {
-        activity ?? false
+        !(isReadonly ?? false)
     }
+    
+    var isReadonly: Bool? = false
 }
 
 struct CardData: Codable, Equatable {

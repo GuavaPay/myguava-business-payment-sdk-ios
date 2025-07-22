@@ -22,9 +22,11 @@ protocol PaymentViewInput: AnyObject {
     func setCardNumber(_ model: CardScannerModel)
     func setCurrentContactInformation(_ data: Payer?)
     func configureSaveCards(_ saveCards: [SavedCardsView.Section: [[SavedCardsCellKind]]])
+    func selectSegmentControl(index: Int) 
     func hideApplePayment()
     func disablePaymentCard()
     func disableAllPayments()
+    func disableSaveCards()
 }
 
 protocol PaymentViewOutput {
@@ -55,8 +57,7 @@ protocol PaymentInteractorOutput: AnyObject {
     func didGetOrder(_ order: PaymentDTO)
     func didNotGetOrder(_ error: Error)
     func didNotPreCreateOrder(_ error: Error)
-    func didExecutePayment(_ result: Result<ResultDataModel, OrderStatusError>)
-    func didNotExecutePayment(_ error: OrderStatusError)
+    func didExecutePayment(_ status: PaymentStatus)
     func didGetCountries(_ countries: [CountryResponse])
     func didResolveCardNumber(_ model: ResolveCard?)
     func showLoading()

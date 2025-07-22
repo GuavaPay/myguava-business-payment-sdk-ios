@@ -12,7 +12,7 @@ final class PaymentPresenter: PaymentViewOutput {
     
     private let interactor: PaymentInteractorInput
     private let router: PaymentRouterInput
-    private let moduleOutput: PaymentDelegate?
+    private weak var moduleOutput: PaymentDelegate?
 
     private weak var view: PaymentViewInput?
     private var paymentViewModel: PaymentViewModel?
@@ -138,7 +138,7 @@ final class PaymentPresenter: PaymentViewOutput {
     }
 
     func didCloseView() {
-        moduleOutput?.handlePaymentCancel()
+        moduleOutput?.handlePaymentResult(.cancel)
     }
 
     func didTapScanCard() {
@@ -180,6 +180,7 @@ extension PaymentPresenter: PaymentInteractorOutput {
 
         prepareApplePayState(viewModel: viewModel)
         preparePaymentCardState(viewModel: viewModel)
+        prepareSaveCardsState(viewModel: viewModel)
 
         view?.showLoading(false)
         paymentViewModel = viewModel
@@ -204,31 +205,19 @@ extension PaymentPresenter: PaymentInteractorOutput {
         // Show error
     }
 
-    func didExecutePayment(_ result: Result<ResultDataModel, OrderStatusError>) {
+    func didExecutePayment(_ status: PaymentStatus) {
         view?.configureConfirmButton(with: .enabled)
-        print("Payment Completed")
-
         view?.closeView()
-        switch result {
-        case .success(let model):
-            moduleOutput?.handlePaymentResult(.success(model))
-        case .failure(let error):
-            moduleOutput?.handlePaymentResult(.failure(.unknown(error)))
-        }
-    }
 
-    func didNotExecutePayment(_ error: OrderStatusError) {
-        view?.configureConfirmButton(with: .enabled)
-        print("Error: \(error)")
-
-        view?.closeView()
-        switch error {
-        case .timeout, .protocolError, .runtimeError, .unknown, .deviceNotSupported, .statusCode:
-            moduleOutput?.handlePaymentResult(.failure(error))
-        case .cancelled:
-            moduleOutput?.handlePaymentCancel()
-        case .cancelledByUser:
-            break
+        switch status {
+        case .success(let data):
+            moduleOutput?.handlePaymentResult(.success(data))
+        case .unsuccess(let data):
+            moduleOutput?.handlePaymentResult(.unsuccess(data))
+        case .error(let error):
+            moduleOutput?.handlePaymentResult(.error(error))
+        case .cancel:
+            moduleOutput?.handlePaymentResult(.cancel)
         }
     }
 
@@ -318,6 +307,35 @@ private extension PaymentPresenter {
     func preparePaymentCardState(viewModel: PaymentViewModel) {
         guard !viewModel.isCardPaymentAvailable else { return }
         view?.disablePaymentCard()
+    }
+    
+    func prepareSaveCardsState(viewModel: PaymentViewModel) {
+        var savedCards: [SavedCardsView.Section: [[SavedCardsCellKind]]] = [:]
+
+        let validCards: [SavedCardsCellKind] = viewModel.validSaveCards.compactMap { .card($0) }
+        let invalidCards: [SavedCardsCellKind] = viewModel.invalidSaveCards.compactMap { .card($0) }
+        
+        savedCards[.newCard] = [[.addNewCard]]
+
+        switch (validCards.isEmpty, invalidCards.isEmpty) {
+        case (false, false):
+            savedCards[.savedCards] = [validCards, invalidCards]
+            view?.selectSegmentControl(index: 0)
+
+        case (false, true):
+            savedCards[.savedCards] = [validCards]
+            view?.selectSegmentControl(index: 0)
+
+        case (true, false):
+            savedCards[.savedCards] = [invalidCards]
+            view?.selectSegmentControl(index: 1)
+
+        case (true, true):
+            view?.disableSaveCards()
+            return
+        }
+
+        view?.configureSaveCards(savedCards)
     }
 
     func validateCardInfo() {

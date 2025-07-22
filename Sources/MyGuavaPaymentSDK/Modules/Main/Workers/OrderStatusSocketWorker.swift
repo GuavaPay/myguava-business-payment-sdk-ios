@@ -1,5 +1,5 @@
 //
-//  OrderListener.swift
+//  OrderStatusSocketWorker.swift
 //  MyGuavaPaymentSDK
 //
 //  Created by Said Kagirov on 02.07.2025.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class OrderListener {
+final class OrderStatusSocketWorker {
     private let webSocketClient: WebSocketClient
     private let environment: WSEnvironment
     private let token: String

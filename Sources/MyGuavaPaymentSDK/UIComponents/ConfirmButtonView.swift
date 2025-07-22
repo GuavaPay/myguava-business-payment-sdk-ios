@@ -13,7 +13,7 @@ final class ConfirmButtonView: UIView {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Pay $20.00"
-        label.textColor = .black
+        label.textColor = UICustomization.Label.textColor
         label.font = .body1Semibold
         label.textAlignment = .center
         return label
@@ -32,8 +32,8 @@ final class ConfirmButtonView: UIView {
     }
 
     private func setupLayout() {
-        backgroundColor = .button.primaryBackgroundRest
-        layer.cornerRadius = 8
+        backgroundColor = UICustomization.Button.backgroundColor
+        layer.cornerRadius = UICustomization.Button.cornerRadius
         clipsToBounds = true
         isUserInteractionEnabled = true
 

@@ -12,7 +12,7 @@ extension PaymentMethod {
         switch self {
         case .applePay: .applePay
         case .paymentCard: .paymentCard
-        /* case .paymentCardBinding: .paymentCardBinding */
+        case .paymentCardBinding: .paymentCardBinding
         }
     }
 }

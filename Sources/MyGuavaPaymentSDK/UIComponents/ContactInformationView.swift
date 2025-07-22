@@ -34,8 +34,8 @@ public final class ContactInformationView: UIView {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.textColor
         label.font = .body2Semibold
-        label.textColor = .foreground.onAccent
         label.text = "Your contact information"
         label.numberOfLines = 0
         return label
@@ -52,8 +52,8 @@ public final class ContactInformationView: UIView {
 
     private let subtitleLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
         label.text = "To proceed, please provide either your phone number or your email address."
         label.numberOfLines = 0
         return label
@@ -67,8 +67,8 @@ public final class ContactInformationView: UIView {
 
     private let emailTitleLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
         label.text = "Email: "
         label.setContentHuggingPriority(.required, for: .horizontal)
         return label
@@ -76,8 +76,8 @@ public final class ContactInformationView: UIView {
 
     private let emailValueLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
         return label
     }()
 
@@ -89,8 +89,8 @@ public final class ContactInformationView: UIView {
 
     private let phoneNumberTitleLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
         label.text = "Phone number: "
         label.setContentHuggingPriority(.required, for: .horizontal)
         return label
@@ -98,8 +98,8 @@ public final class ContactInformationView: UIView {
 
     private let phoneNumberValueLabel: UILabel = {
         let label = UILabel()
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
         return label
     }()
 
@@ -161,11 +161,11 @@ public final class ContactInformationView: UIView {
     }
 
     private func setupView() {
-        backgroundColor = .background.primary
+        backgroundColor = UICustomization.Common.backgroundSecondaryColor
+        layer.borderWidth = UICustomization.Input.borderWidth
+        layer.borderColor = UICustomization.Input.borderColor.cgColor
         layer.cornerRadius = Radius.s
         layer.masksToBounds = true
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.border.primary.cgColor
         isSkeletonable = true
 
         changeInfoButton.setContentHuggingPriority(.required, for: .horizontal)

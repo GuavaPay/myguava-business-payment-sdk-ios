@@ -37,6 +37,7 @@ public struct BackgroundColorScheme: BackgroundColorProtocol {
     public static var success: UIColor { UIColor(light: .green200, dark: .green200) }
     public static var danger: UIColor { UIColor(light: .red100, dark: .red100) }
     public static var warning: UIColor { UIColor(light: .yellow100, dark: .yellow100) }
+    public static var divider: UIColor { UIColor(light: .gray300, dark: .gray300) }
 }
 
 // MARK: - ForegroundColorScheme

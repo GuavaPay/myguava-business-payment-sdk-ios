@@ -48,11 +48,23 @@ final class PaymentWorker {
             config.availableCardProductCategories.compactMap { $0.cardCategory }
         ])
         
-        let savedCards = bindings.partitioned {
-            guard let scheme = $0.cardData?.cardScheme,
-                  let category = $0.product?.category else { return false }
-            return availableCardSchemes.contains(scheme) && availableCardCategories.contains(category)
+        let updatedBindings = bindings.compactMap { binding in
+            var binding = binding
+            let isValid: Bool
+            
+            if let scheme = binding.cardData?.cardScheme,
+               let category = binding.product?.category {
+                isValid = availableCardSchemes.contains(scheme) && availableCardCategories.contains(category)
+            } else {
+                isValid = false
+            }
+            if !isValid {
+                binding.isReadonly = true
+            }
+            return binding
         }
+
+        let savedCards = updatedBindings.partitioned { $0.isEnabled }
 
         return PaymentDTO(
             order: order.order,

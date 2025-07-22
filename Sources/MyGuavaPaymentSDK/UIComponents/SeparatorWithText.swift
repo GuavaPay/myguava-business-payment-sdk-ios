@@ -12,13 +12,13 @@ final class SeparatorWithTextView: UIView {
 
     private let leftLine: UIView = {
         let view = UIView()
-        view.backgroundColor = UIColor(hex: "#EFEFF0")
+        view.backgroundColor = UICustomization.Common.dividerColor
         return view
     }()
 
     private let rightLine: UIView = {
         let view = UIView()
-        view.backgroundColor = UIColor(hex: "#EFEFF0")
+        view.backgroundColor = UICustomization.Common.dividerColor
         return view
     }()
 
@@ -26,7 +26,7 @@ final class SeparatorWithTextView: UIView {
         let label = UILabel()
         label.text = "Or pay by card"
         label.font = .caption1Regular
-        label.textColor = .systemGray
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.textAlignment = .center
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.setContentCompressionResistancePriority(.required, for: .horizontal)

@@ -9,8 +9,16 @@ import PassKit
 
 typealias ApplePayConfig = ApplePayManager.ApplePayConfig
 
+// MARK: - ApplePayError
+
+public enum ApplePayError: Error {
+    case statusCode(String?)
+    case deviceNotSupported
+    case cancelledByUser
+}
+
 protocol ApplePayManagerDelegate: AnyObject {
-    func didAuthorizePayment(result: Result<Void, OrderStatusError>)
+    func didAuthorizePayment(result: Result<Void, ApplePayError>)
 }
 
 final class ApplePayManager: NSObject {
@@ -22,7 +30,7 @@ final class ApplePayManager: NSObject {
     var config: ApplePayConfig?
     
     // сюда сохраняем результат
-    private var paymentResult: Result<Void, OrderStatusError>?
+    private var paymentResult: Result<Void, ApplePayError>?
     
     init(orderService: OrderService, orderId: String) {
         self.orderService = orderService
@@ -180,12 +188,4 @@ extension ApplePayManager {
             self.merchantCapabilities = merchantCapabilities
         }
     }
-}
-
-// MARK: - ApplePayError
-
-public enum ApplePayError: Error {
-    case statusCode(String?)
-    case deviceNotSupported
-    case cancelledByUser
 }

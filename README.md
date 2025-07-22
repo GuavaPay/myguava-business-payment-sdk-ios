@@ -66,6 +66,12 @@ To launch the payment sheet, you need:
 ### Optional parameters
 
 To configure supported payment methods pass your lists of:
+- **uiCustomization**: `GPUICustomization`
+    - `common`: `GPCommonCustomization` - Common appearance customization.
+    - `button`: `GPButtonCustomization` - Button appearance customization.
+    - `label`: `GPLabelCustomization` - Label appearance customization
+    - `input`: `GPInputCustomization` - Input field appearance customization.
+    - `selectItem`: `GPSelectItemCustomization` - Selection item appearance customization.
 - **availableCardSchemes**: `[PaymentCardScheme]`
     - `.visa`
     - `.mastercard`
@@ -103,6 +109,13 @@ networkService.createOrder(amount: 10.09, currency: "GBP") { [weak self] result 
                 orderId: orderId,
                 environment: NetworkService.shared.environment
                 // Optionally:
+                // uiCustomization: GPUICustomization(
+                //     common: .default,
+                //     button: .default,
+                //     label: .default,
+                //     input: .default,
+                //     selectItem: .default
+                // ),
                 // availableCardSchemes: [.visa, .mastercard],
                 // availablePaymentMethods: [.paymentCard, .applePay],
                 // availableCardProductCategories: [.debit, .credit]
@@ -125,6 +138,10 @@ Your view controller should conform to PaymentDelegate to receive payment result
 
 ```swift
 extension YourViewController: PaymentDelegate {
+    func handlePaymentResult(_ result: PaymentStatus) {
+        // Handle payment result: .success, .unsuccess, .error, .cancel
+    }
+
     func handlePaymentResult(_ result: Result<SuccessfulDataModel, TransactionError>) {
         // Handle payment result (success or failure)
         // in `SuccessfulDataModel.orderStatus: OrderStatus`

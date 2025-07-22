@@ -11,7 +11,7 @@ public class SelectCountryCodeEmptyStateTableViewCell: UITableViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .body2Regular
-        label.textColor = .foreground.onAccentSecondary
+        label.textColor = UICustomization.Label.secondaryTextColor
         label.text = "Nothing found"
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -42,7 +42,7 @@ public class SelectCountryCodeEmptyStateTableViewCell: UITableViewCell {
     }
 
     private func configureAddSubviews() {
-        backgroundColor = .background.primary
+        backgroundColor = UICustomization.Common.backgroundColor
         selectionStyle = .none
         contentView.addSubview(titleLabel)
     }

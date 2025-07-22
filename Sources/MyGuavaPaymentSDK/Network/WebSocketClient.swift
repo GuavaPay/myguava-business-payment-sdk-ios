@@ -13,7 +13,7 @@ public enum WSEnvironment: String {
     var baseURL: String {
         switch self {
         case .sandbox:
-            return "wss://cardium-cpg-preprod.guavapay.com/ws"
+            return "wss://sandbox-pgw.myguava.com/ws"
         }
     }
 }
@@ -29,8 +29,13 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var reconnectTimer: Timer?
     private var pingTimer: Timer?
     
-    private let pingInterval: TimeInterval = 10
+    private let pingInterval: TimeInterval = 15
     private let reconnectInterval: TimeInterval = 5
+    
+    private var failureRetryCount = 3
+    private var currentRetryCount = 0
+    
+    private var onFailure: ((Error) -> Void)?
     
     init(
         environment: WSEnvironment,
@@ -44,36 +49,40 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         self.queryItems = queryItems
     }
     
-    func startListening(onEvent: @escaping (String) -> Void) {
-        self.onEvent = onEvent
-        
-        var urlString = environment.baseURL + endpoint
-
-        // !!!: Don't user URLComponent because it replaces wss to https
-        if let queryItems = queryItems, !queryItems.isEmpty {
-            let query = queryItems.map { "\($0.name)=\($0.value ?? "")" }
-                .joined(separator: "&")
-            urlString += "?" + query
+    func startListening(
+        onEvent: @escaping (String) -> Void,
+        onFailure: ((Error) -> Void)? = nil) {
+            
+            self.onEvent = onEvent
+            self.onFailure = onFailure
+            
+            var urlString = environment.baseURL + endpoint
+            
+            // !!!: Don't user URLComponent because it replaces wss to https
+            if let queryItems = queryItems, !queryItems.isEmpty {
+                let query = queryItems.map { "\($0.name)=\($0.value ?? "")" }
+                    .joined(separator: "&")
+                urlString += "?" + query
+            }
+            
+            guard let url = URL(string: urlString) else {
+                print("[WebSocketClient] Invalid WS URL: \(urlString)")
+                return
+            }
+            
+            let config = URLSessionConfiguration.default
+            config.httpAdditionalHeaders = [
+                "Authorization": "Bearer \(token)",
+                "Content-Type": "application/json"
+            ]
+            
+            session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
+            webSocketTask = session?.webSocketTask(with: url)
+            webSocketTask?.resume()
+            
+            listen()
+            startPing()
         }
-
-        guard let url = URL(string: urlString) else {
-            print("[WebSocketClient] Invalid WS URL: \(urlString)")
-            return
-        }
-        
-        let config = URLSessionConfiguration.default
-        config.httpAdditionalHeaders = [
-            "Authorization": "Bearer \(token)",
-            "Content-Type": "application/json"
-        ]
-        
-        session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
-        webSocketTask = session?.webSocketTask(with: url)
-        webSocketTask?.resume()
-        
-        listen()
-        startPing()
-    }
     
     func stopListening() {
         pingTimer?.invalidate()
@@ -93,23 +102,33 @@ private extension WebSocketClient {
     func listen() {
         webSocketTask?.receive { [weak self] result in
             guard let self else { return }
-            
+
             switch result {
             case .success(let message):
+                self.currentRetryCount = 0
+
                 switch message {
                 case .string(let text):
                     self.onEvent?(text)
                 case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) {
-                        self.onEvent?(text)
+                    guard let text = String(data: data, encoding: .utf8) else {
+                        return
                     }
-                default:
-                    break
+                    self.onEvent?(text)
                 }
-                self.listen() // continue listening
+                self.listen()
+
             case .failure(let error):
                 print("[WebSocketClient] Receive failed: \(error)")
-                self.scheduleReconnect()
+
+                if self.currentRetryCount < self.failureRetryCount {
+                    self.currentRetryCount += 1
+                    print("[WebSocketClient] Retrying (\(self.currentRetryCount)/\(self.failureRetryCount))...")
+                    self.scheduleReconnect()
+                } else {
+                    self.currentRetryCount = 0
+                    self.onFailure?(error)
+                }
             }
         }
     }
@@ -134,7 +153,7 @@ private extension WebSocketClient {
     func scheduleReconnect() {
         reconnectTimer?.invalidate()
         reconnectTimer = Timer.scheduledTimer(withTimeInterval: reconnectInterval, repeats: false) { [weak self] _ in
-            print("[WebSocketClient] Trying to reconnect...")
+            print("[WebSocketClient] Attempting reconnect #\(self?.currentRetryCount ?? 0)")
             self?.startListening(onEvent: self?.onEvent ?? { _ in })
         }
     }

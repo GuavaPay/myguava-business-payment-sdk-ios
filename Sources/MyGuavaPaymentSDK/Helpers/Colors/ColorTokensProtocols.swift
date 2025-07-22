@@ -20,6 +20,7 @@ public protocol BackgroundColorProtocol {
     static var success: UIColor { get }
     static var danger: UIColor { get }
     static var warning: UIColor { get }
+    static var divider: UIColor { get }
 }
 
 public protocol ForegroundColorProtocol {

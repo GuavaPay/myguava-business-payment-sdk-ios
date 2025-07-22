@@ -14,6 +14,8 @@ final class SavedCardsView: UIView {
     var onChangeSegmentControl: ((Int) -> Void)?
     var onEditButtonTapped: ((IndexPath) -> Void)?
     var onDeleteButtonTapped: ((IndexPath) -> Void)?
+    var onChangeDigits: ((String) -> Void)?
+    var onFieldEndEditing: ((CardInformationView.Field) -> Void)?
 
     enum Section: Int {
         case savedCards
@@ -50,7 +52,7 @@ final class SavedCardsView: UIView {
         }
     }
 
-    private lazy var segmentedControl = SegmentedControl(actions: self.configureSegmentActions())
+    private lazy var segmentedControl = SegmentedControl(actions: configureSegmentActions())
     private lazy var segmentedControlShimmerView: UIView = {
         let view = UIView()
         view.isSkeletonable = true
@@ -67,6 +69,7 @@ final class SavedCardsView: UIView {
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
         }
+        
         var frame = CGRect.zero
         frame.size.height = .leastNormalMagnitude
         tableView.tableHeaderView = UIView(frame: frame)
@@ -74,6 +77,9 @@ final class SavedCardsView: UIView {
         tableView.allowsMultipleSelection = false
         tableView.showsVerticalScrollIndicator = false
         tableView.isSkeletonable = true
+        tableView.isScrollEnabled = false
+        tableView.bounces = false
+
         return tableView
     }()
 
@@ -137,7 +143,8 @@ final class SavedCardsView: UIView {
 
         tableView.snp.makeConstraints {
             $0.top.equalTo(segmentedControl.snp.bottom).offset(20)
-            $0.bottom.directionalHorizontalEdges.equalToSuperview()
+            $0.directionalHorizontalEdges.equalToSuperview()
+            $0.bottom.equalToSuperview()
         }
     }
 
@@ -168,17 +175,34 @@ final class SavedCardsView: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
     }
 
     func setCardsData(_ data: [Section: [[SavedCardsCellKind]]]) {
         cards = data
+    }
+    
+    func setSelectedSegment(index: Int) {
+        guard segmentedControl.selectedSegmentIndex != index,
+              index < segmentedControl.numberOfSegments else { return }
+
+        segmentedControl.selectedSegmentIndex = index
+
+        switch index {
+        case 0:
+            currentSection = .savedCards
+        case 1:
+            currentSection = .newCard
+        default:
+            break
+        }
+        onChangeSegmentControl?(index)
     }
 }
 
@@ -286,10 +310,17 @@ private extension SavedCardsView {
         }
 
         cell.onSaveCardTapped = { [weak self] in
-            // tell the tableView to re-run its layout
             self?.tableView.performBatchUpdates(nil, completion: nil)
         }
-
+        
+        cell.onChangeDigits = { [weak self] digits in
+            self?.onChangeDigits?(digits)
+        }
+        
+        cell.onFieldEndEditing = { [weak self] field in
+            self?.onFieldEndEditing?(field)
+        }
+        
         return cell
     }
 }
@@ -331,11 +362,11 @@ extension SavedCardsView: SkeletonTableViewDataSource {
 // MARK: - ApplePayButtonView + ShimmerableView
 
 extension SavedCardsView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [segmentedControlShimmerView]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [segmentedControlShimmerView: .value(21)]
     }
 }

@@ -18,10 +18,10 @@ extension InputBackDropView {
                                                  bottom: .spacing100,
                                                  right: .spacing200)
 
-        public var backgroundColor: UIColor = .gray200
-        public var cornerRadius: CGFloat = .radius200
-        public var borderWidth: CGFloat = 1
-        public var borderColor: UIColor = .input.borderRest
+        public var backgroundColor: UIColor = UICustomization.Input.backgroundColor
+        public var cornerRadius: CGFloat = UICustomization.Input.cornerRadius
+        public var borderWidth: CGFloat = UICustomization.Input.borderWidth
+        public var borderColor: UIColor = UICustomization.Input.borderColor
     }
 }
 

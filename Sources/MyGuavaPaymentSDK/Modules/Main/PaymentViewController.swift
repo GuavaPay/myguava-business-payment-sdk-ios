@@ -52,7 +52,7 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
 
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = UICustomization.Common.backgroundColor
         view.layer.cornerRadius = 16
         view.clipsToBounds = true
         return view
@@ -103,6 +103,7 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         bindActions()
         setupKeyboardObservers()
         output?.viewDidLoad()
+        
     }
     deinit {
         NotificationCenter.default.removeObserver(self)
@@ -183,6 +184,10 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     func configureSaveCards(_ saveCards: [SavedCardsView.Section : [[SavedCardsCellKind]]]) {
         savedCardsView.setCardsData(saveCards)
     }
+    
+    func selectSegmentControl(index: Int) {
+        savedCardsView.setSelectedSegment(index: index)
+    }
 
     func hideApplePayment() {
         applePayButtonView.isHidden = true
@@ -199,6 +204,11 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         disablePaymentCard()
         applePayButtonView.isUserInteractionEnabled = false
     }
+    
+    func disableSaveCards() {
+        savedCardsView.isHidden = true
+        cardInformationView.isHidden = false
+    }
 
     private func configureViews() {
         applePayButtonView.onTap = { [weak self] in
@@ -213,8 +223,17 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         cardInformationView.onScanButtonTapped = { [weak self] in
             self?.output?.didTapScanCard()
         }
-        savedCardsView.onChangeSegmentControl = { [weak self] _ in
+        
+        savedCardsView.onChangeSegmentControl = { [weak self] index in
             self?.updatePreferredHeight()
+        }
+        
+        savedCardsView.onChangeDigits = { [weak self] digits in
+            self?.output?.didChangeCardNumber(digits: digits)
+        }
+        
+        savedCardsView.onFieldEndEditing = { [weak self] field in
+            self?.output?.didEndEditing(field: field)
         }
     }
 
@@ -226,12 +245,15 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         stackView.addArrangedSubviews(
             applePayButtonView,
             separatorView,
+            savedCardsView,
             cardInformationView,
             contactInformationView,
             paymentsImageContainer,
             bottomSpacer
         )
-
+        
+        cardInformationView.isHidden = true
+        
         stackView.setCustomSpacing(24, after: separatorView)
 
         containerView.addSubviews(

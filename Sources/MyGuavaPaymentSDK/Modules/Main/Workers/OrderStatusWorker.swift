@@ -39,7 +39,6 @@ final class OrderStatusWorker {
 // MARK: - Private
 
 private extension OrderStatusWorker {
-    
     func poll(
         orderId: String,
         delay: TimeInterval,
@@ -75,7 +74,6 @@ private extension OrderStatusWorker {
                 default:
                     completion(.failure(.unknown(nil)))
                 }
-                
             case .failure:
                 self.scheduleNext(
                     orderId: orderId,

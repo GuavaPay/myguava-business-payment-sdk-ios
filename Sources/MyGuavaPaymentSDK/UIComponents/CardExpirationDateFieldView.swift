@@ -15,7 +15,7 @@ final class CardExpirationDateFieldView: UIView {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Expiration date"
-        label.textColor = .input.primaryForeground
+        label.textColor = UICustomization.Label.textColor
         label.font = .body1Regular
         label.isSkeletonable = true
         return label
@@ -28,12 +28,12 @@ final class CardExpirationDateFieldView: UIView {
         textField.attributedPlaceholder = NSAttributedString(
             string: "MM/YY",
             attributes: [
-                .foregroundColor: UIColor.foreground.secondary
+                .foregroundColor: UICustomization.Input.placeholderTextColor
             ]
         )
         textField.keyboardType = .numberPad
         textField.font = .body1Regular
-        textField.textColor = .input.primaryForeground
+        textField.textColor = UICustomization.Input.textColor
         textField.borderStyle = .none
         textField.setLeftPadding(10)
         textField.addTarget(self, action: #selector(textEditingDidEnd), for: .editingDidEnd)
@@ -42,10 +42,10 @@ final class CardExpirationDateFieldView: UIView {
 
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .gray200
-        view.layer.cornerRadius = 10
-        view.layer.borderWidth = 1
-        view.layer.borderColor = UIColor.input.borderRest.cgColor
+        view.backgroundColor = UICustomization.Input.backgroundColor
+        view.layer.cornerRadius = UICustomization.Input.cornerRadius
+        view.layer.borderWidth = UICustomization.Input.borderWidth
+        view.layer.borderColor = UICustomization.Input.borderColor.cgColor
         view.isSkeletonable = true
         return view
     }()

@@ -30,6 +30,7 @@ final class CardNameFieldView: UIView {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Card name"
+        label.textColor = UICustomization.Label.textColor
         label.font = .body1Regular
         label.isSkeletonable = true
         return label

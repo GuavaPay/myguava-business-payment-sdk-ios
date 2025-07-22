@@ -28,10 +28,9 @@ final class PaymentInteractor: PaymentInteractorInput {
     private let bindingService: BindingsService
     private let resolveCardService: ResolveCardService
 
-    private let orderListener: OrderListener
 
     private let paymentWorker: PaymentWorker
-    private let orderStatusWorker: OrderStatusWorker
+    private let orderListener: OrderStatusSocketWorker
 
     private let timeoutSeconds = TimeInterval(5 * 60)
     private let requestorAppUrl = "https://google.com"
@@ -79,14 +78,13 @@ final class PaymentInteractor: PaymentInteractorInput {
         self.applePayService = applePayService
         self.bindingService = bindingService
         self.resolveCardService = resolveCardService
-        self.orderStatusWorker = orderStatusWorker
         self.paymentWorker = PaymentWorker(
             sdkCardSchemes: sdkAvailableCardSchemes,
             sdkPaymentMethods: sdkAvailableCardMethods,
             sdkCardCategories: sdkAvailableCardProductCategories,
             config: config
         )
-        self.orderListener = OrderListener(
+        self.orderListener = OrderStatusSocketWorker(
             orderId: config.orderId,
             token: config.sessionToken,
             queryItems: [
@@ -120,8 +118,6 @@ final class PaymentInteractor: PaymentInteractorInput {
                     case .invalidResponse, .noData, .decodingError:
                         shouldAttemptRetry = false
                     }
-                } else if let urlError = error as? URLError {
-                    shouldAttemptRetry = true
                 } else {
                     shouldAttemptRetry = true
                 }
@@ -160,7 +156,7 @@ final class PaymentInteractor: PaymentInteractorInput {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     self.pollOrderStatusUntilPaid(delay: delay, repeatCount: repeatCount - 1, completion: completion)
                 }
-            case .failure(let error):
+            case .failure:
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     self.pollOrderStatusUntilPaid(delay: delay, repeatCount: repeatCount - 1, completion: completion)
                 }
@@ -180,12 +176,8 @@ final class PaymentInteractor: PaymentInteractorInput {
             case .success(let success):
                 switch success.statusCode {
                 case 202:
-                    guard let paymentData = success.model as? PreCreatePayment else {
-                        assertionFailure("Failed to decode PreCreatePayment")
-                        return
-                    }
-                    self?.messageVersion = paymentData.requirements.threedsSdkCreateTransaction.messageVersion
-                    self?.directoryServerID = paymentData.requirements.threedsSdkCreateTransaction.directoryServerID
+                    self?.messageVersion = success.model?.requirements.threedsSdkCreateTransaction.messageVersion
+                    self?.directoryServerID = success.model?.requirements.threedsSdkCreateTransaction.directoryServerID
 
                 case 204:
                     print("204")
@@ -249,40 +241,48 @@ private extension PaymentInteractor {
         completion: @escaping ([CardScheme], [Binding]) -> Void
     ) {
         let group = DispatchGroup()
-
+        
         var appleCardSchemes: [CardScheme] = []
         var bindings: [Binding] = []
-
-        /*
-         group.enter()
-         fetchSaveCardsIfNeeded(getOrder: getOrder) {
-         bindings = $0
-         group.leave()
-         }
-         */
-
+        
+        group.enter()
+        fetchSaveCardsIfNeeded(getOrder: getOrder) {
+            bindings = $0
+            group.leave()
+        }
+        
         group.enter()
         fetchApplePayContextIfNeeded(getOrder: getOrder) {
             appleCardSchemes = $0
             group.leave()
         }
-
+        
         group.notify(queue: .main) {
             completion(appleCardSchemes, bindings)
         }
     }
 
     func fetchSaveCardsIfNeeded(getOrder: GetOrder, completion: @escaping ([Binding]) -> Void) {
-        guard let order = getOrder.order,
-              order.payer?.id != nil,
-              order.availablePaymentMethods.contains(.paymentCardBinding) else {
+        guard let order = getOrder.order, order.payer?.id != nil else {
             completion([])
             return
         }
-        bindingService.getBindings() { result in
+
+        let availableMethods = Set.intersectManyArray([
+            order.availablePaymentMethods,
+            sdkAvailableCardMethods,
+            config.availablePaymentMethods.compactMap { $0.orderMethod }
+        ])
+
+        guard availableMethods.contains(.paymentCardBinding) else {
+            completion([])
+            return
+        }
+
+        bindingService.getBindings { result in
             switch result {
             case .success(let response):
-                guard let model = response.model else { return }
+                guard let model = response.model else { return completion([]) }
                 completion(model.data)
             case .failure:
                 completion([])
@@ -291,11 +291,11 @@ private extension PaymentInteractor {
     }
 
     func setupTDSService() {
-        let config = GPTDSConfigParameters()
-        let customization = GPTDSUICustomization()
+        let configParameters = GPTDSConfigParameters()
+        let customization = GPTDSUICustomization(from: config.uiCustomization)
 
         threeDS2Service.initialize(
-            withConfig: config,
+            withConfig: configParameters,
             locale: .current,
             uiSettings: customization
         )
@@ -344,21 +344,17 @@ private extension PaymentInteractor {
             case .success(let success):
                 switch success.statusCode {
                 case 200:
-                    print("200")
                     self?.startPollingOrderStatus()
                 case 202:
-                    print("202")
-                    guard let model = success.model as? ExecutePaymentRequirements else {
+                    guard let model = success.model else {
                         return
                     }
-
                     self?.doPaymentChallenge(requirements: model)
                 default:
                     print("default")
                 }
-
-            case .failure(let failure):
-                self?.output?.didNotExecutePayment(.unknown(failure))
+            case .failure(let error):
+                self?.output?.didExecutePayment(.error(.unknown(error)))
             }
         }
     }
@@ -449,32 +445,47 @@ private extension PaymentInteractor {
     }
 
     func startPollingOrderStatus() {
-        orderStatusWorker.startPolling(
-            orderId: config.orderId,
-            delay: 2,
-            repeatCount: 10
-        ) { [weak self] result in
-            switch result {
-            case .success(let data):
-                guard let order = data.order,
-                      let status = order.status else { return }
-                self?.output?.didExecutePayment(.success(.init(
+        orderListener.startListening { [weak self] event in
+            guard let self else { return }
+            switch event.order.status {
+            case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
+                self.output?.stopLoading()
+                self.orderListener.stopListening()
+                self.output?.didExecutePayment(.success(.init(
                     order: .init(
-                        id: order.id,
-                        status: status,
-                        referenceNumber: order.referenceNumber,
-                        amount: ResultDataModel.Amount(from: order.totalAmount)
+                        id: event.order.id,
+                        status: event.order.status,
+                        referenceNumber: event.order.referenceNumber,
+                        amount: ResultDataModel.Amount(from: event.order.totalAmount)
                     ),
                     payment: .init(
-                        id: data.payment?.id,
-                        date: data.payment?.date,
-                        rrn: data.payment?.rrn,
-                        authCode: data.payment?.authCode,
-                        resultMessage: data.payment?.result?.message
+                        id: event.payment?.id,
+                        date: event.payment?.date,
+                        rrn: event.payment?.rrn,
+                        authCode: event.payment?.authCode,
+                        resultMessage: event.payment?.result?.message
                     )
                 )))
-            case .failure(let error):
-                self?.output?.didNotExecutePayment(error)
+            case .declined, .cancelled, .expired:
+                self.output?.stopLoading()
+                self.orderListener.stopListening()
+                self.output?.didExecutePayment(.unsuccess(.init(
+                    order: .init(
+                        id: event.order.id,
+                        status: event.order.status,
+                        referenceNumber: event.order.referenceNumber,
+                        amount: ResultDataModel.Amount(from: event.order.totalAmount)
+                    ),
+                    payment: .init(
+                        id: event.payment?.id,
+                        date: event.payment?.date,
+                        rrn: event.payment?.rrn,
+                        authCode: event.payment?.authCode,
+                        resultMessage: event.payment?.result?.message
+                    )
+                )))
+            case .created:
+                break
             }
         }
     }
@@ -487,8 +498,18 @@ private extension PaymentInteractor {
         getOrder: GetOrder,
         completion: @escaping ([CardScheme]) -> Void
     ) {
-        guard let order = getOrder.order,
-              order.availablePaymentMethods.contains(.applePay) else {
+        guard let order = getOrder.order else {
+            completion([])
+            return
+        }
+
+        let availableMethods = Set.intersectManyArray([
+            order.availablePaymentMethods,
+            sdkAvailableCardMethods,
+            config.availablePaymentMethods.compactMap { $0.orderMethod }
+        ])
+        
+        guard availableMethods.contains(.applePay) else {
             completion([])
             return
         }
@@ -555,65 +576,78 @@ extension PaymentInteractor: PaymentStatusReceiverDelegate {
     }
 
     func didCancelChallenge() {
-        output?.didNotExecutePayment(.cancelled)
+        output?.didExecutePayment(.cancel)
     }
 
     func didTimeoutChallenge() {
-        output?.didNotExecutePayment(.timeout)
+        output?.didExecutePayment(.error(.timeout))
     }
 
     func didReceiveProtocolError(_ error: GPTDSProtocolErrorEvent) {
-        output?.didNotExecutePayment(.protocolError(error))
+        output?.didExecutePayment(.error(.protocolError(error)))
     }
 
     func didReceiveRuntimeError(_ error: GPTDSRuntimeErrorEvent) {
-        output?.didNotExecutePayment(.runtimeError(error))
+        output?.didExecutePayment(.error(.runtimeError(error)))
     }
 }
 
 // MARK: - ApplePayManagerDelegate
 
 extension PaymentInteractor: ApplePayManagerDelegate {
-    func didAuthorizePayment(result: Result<Void, OrderStatusError>) {
+    func didAuthorizePayment(result: Result<Void, ApplePayError>) {
         switch result {
         case .success:
             output?.showLoading()
-            orderStatusWorker.startPolling(
-                orderId: config.orderId,
-                delay: 1,
-                repeatCount: 5
-            ) { [weak self] result in
-                self?.output?.stopLoading()
-
-                switch result {
-                case .success(let data):
-                    guard let order = data.order,
-                          let status = order.status else { return }
-                    self?.output?.didExecutePayment(.success(.init(
+            orderListener.startListening { [weak self] event in
+                guard let self else { return }
+                switch event.order.status {
+                case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
+                    self.output?.stopLoading()
+                    self.orderListener.stopListening()
+                    self.output?.didExecutePayment(.success(.init(
                         order: .init(
-                            id: order.id,
-                            status: status,
-                            referenceNumber: order.referenceNumber,
-                            amount: ResultDataModel.Amount(from: order.totalAmount)
+                            id: event.order.id,
+                            status: event.order.status,
+                            referenceNumber: event.order.referenceNumber,
+                            amount: ResultDataModel.Amount(from: event.order.totalAmount)
                         ),
                         payment: .init(
-                            id: data.payment?.id,
-                            date: data.payment?.date,
-                            rrn: data.payment?.rrn,
-                            authCode: data.payment?.authCode,
-                            resultMessage: data.payment?.result?.message
+                            id: event.payment?.id,
+                            date: event.payment?.date,
+                            rrn: event.payment?.rrn,
+                            authCode: event.payment?.authCode,
+                            resultMessage: event.payment?.result?.message
                         )
                     )))
-                case .failure(let error):
-                    self?.output?.didNotExecutePayment(.statusCode(error.localizedDescription))
+                case .declined, .cancelled, .expired:
+                    self.output?.stopLoading()
+                    self.orderListener.stopListening()
+                    self.output?.didExecutePayment(.unsuccess(.init(
+                        order: .init(
+                            id: event.order.id,
+                            status: event.order.status,
+                            referenceNumber: event.order.referenceNumber,
+                            amount: ResultDataModel.Amount(from: event.order.totalAmount)
+                        ),
+                        payment: .init(
+                            id: event.payment?.id,
+                            date: event.payment?.date,
+                            rrn: event.payment?.rrn,
+                            authCode: event.payment?.authCode,
+                            resultMessage: event.payment?.result?.message
+                        )
+                    )))
+                case .created:
+                    break
                 }
             }
         case .failure(let errorType):
             switch errorType {
             case .deviceNotSupported:
-                self.output?.didNotExecutePayment(.deviceNotSupported)
+                self.output?.didExecutePayment(.error(.applePayNotSupported))
             case .statusCode(let error):
-                self.output?.didNotExecutePayment(.statusCode(error))
+                self.output?.didExecutePayment(.error(.statusCode(error)))
             default:
                 break
             }

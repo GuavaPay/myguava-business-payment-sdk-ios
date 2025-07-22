@@ -22,8 +22,8 @@ final class EmailFieldView: UIView {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Email"
+        label.textColor = UICustomization.Label.textColor
         label.font = .body1Regular
-        label.textColor = .input.primaryForeground
         return label
     }()
 

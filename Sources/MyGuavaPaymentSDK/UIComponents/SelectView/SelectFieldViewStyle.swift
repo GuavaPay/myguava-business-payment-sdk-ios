@@ -20,11 +20,11 @@ extension SelectFieldView {
         func borderColor() -> UIColor {
             switch self {
             case .enabled, .pressed, .loading:
-                return .input.borderRest
+                return UICustomization.Input.borderColor
             case .error:
                 return .input.borderDanger
             case .disabled, .blocked, .blockedLoading:
-                return .input.borderRest
+                return UICustomization.Input.borderColor
             }
         }
 
@@ -33,14 +33,14 @@ extension SelectFieldView {
             case .pressed:
                 return .input.backgroundHover
             default:
-                return .input.backgroundRest
+                return UICustomization.Input.backgroundColor
             }
         }
 
         func textColor() -> UIColor {
             switch self {
             case .enabled, .pressed, .error, .loading:
-                return .input.primaryForeground
+                return UICustomization.Input.textColor
             case .disabled, .blocked, .blockedLoading:
                 return .input.disabledForeground
             }
@@ -49,11 +49,11 @@ extension SelectFieldView {
         func placeholderTextColor() -> UIColor {
             switch self {
             case .enabled, .pressed, .loading:
-                return .input.secondaryForeground
+                return UICustomization.Input.placeholderTextColor
             case .error:
                 return .input.secondaryForeground
             case .disabled, .blocked, .blockedLoading:
-                return .input.secondaryForeground
+                return UICustomization.Input.placeholderTextColor
             }
         }
 
@@ -173,13 +173,13 @@ extension SelectFieldView {
             placeholderTextFont: UIFont = .body1Regular,
             bottomTextFont: UIFont = .caption1Regular,
             tintColor: UIColor = .foreground.primary,
-            borderColor: UIColor = .input.borderRest,
-            borderWidth: CGFloat = 1,
-            backgroundColor: UIColor = .input.backgroundRest,
-            cornerRadius: CGFloat = .radius200,
+            borderColor: UIColor,
+            borderWidth: CGFloat,
+            backgroundColor: UIColor,
+            cornerRadius: CGFloat,
             height: CGFloat = 48,
-            textColor: UIColor = .input.primaryForeground,
-            placeholderTextColor: UIColor = .input.secondaryForeground,
+            textColor: UIColor,
+            placeholderTextColor: UIColor,
             titleTextColor: UIColor = .input.primaryForeground,
             bottomTextColor: UIColor = .input.primaryForeground
         ) {
@@ -203,7 +203,14 @@ extension SelectFieldView {
 
 extension SelectFieldView.Style {
     public static func getStyle(_ state: SelectFieldView.State) -> SelectFieldView.Style {
-        let stock = SelectFieldView.StockStyle()
+        let stock = SelectFieldView.StockStyle(
+            borderColor: UICustomization.Input.borderColor,
+            borderWidth: UICustomization.Input.borderWidth,
+            backgroundColor: UICustomization.Input.backgroundColor,
+            cornerRadius: UICustomization.Input.cornerRadius,
+            textColor: UICustomization.Input.textColor,
+            placeholderTextColor: UICustomization.Input.placeholderTextColor
+        )
         return stock
             .borderColor(state.borderColor())
             .borderWidth(state.borderWidth())

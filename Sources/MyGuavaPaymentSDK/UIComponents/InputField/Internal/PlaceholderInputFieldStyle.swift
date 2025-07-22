@@ -28,7 +28,7 @@ public extension PlaceholderInputField {
     }
 
     struct StockStyle: Style {
-        public var tintColor: UIColor = .input.primaryForeground
+        public var tintColor: UIColor = UICustomization.Input.textColor
 
         public var titleFont: UIFont = .caption1Regular
 
@@ -37,8 +37,8 @@ public extension PlaceholderInputField {
         public var inputPlaceholderFont: UIFont = .body1Regular
 
         public var titleColor: UIColor = .input.secondaryForeground
-        public var inputPlaceholderColor: UIColor = .input.secondaryForeground
-        public var inputTextColor: UIColor = .input.primaryForeground
+        public var inputPlaceholderColor: UIColor = UICustomization.Input.placeholderTextColor
+        public var inputTextColor: UIColor = UICustomization.Input.textColor
 
         public func titleColor(_ value: UIColor) -> Self {
             var copy = self

@@ -17,9 +17,10 @@ struct PaymentOrderStatusEvent: Decodable {
     struct Order: Decodable {
         let id: String
         let referenceNumber: String
-        let status: String
+        let status: OrderStatus
         let paymentPageUrl: String?
         let shortPaymentPageUrl: String?
+        let totalAmount: Amount
     }
     
     struct Payment: Decodable {

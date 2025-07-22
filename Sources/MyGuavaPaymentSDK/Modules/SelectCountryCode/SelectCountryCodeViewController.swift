@@ -34,7 +34,7 @@ public final class SelectCountryCodeViewController: UIViewController {
 
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .background.primary
+        view.backgroundColor = UICustomization.Common.backgroundColor
         view.layer.cornerRadius = 16
         view.clipsToBounds = true
         return view
@@ -44,6 +44,7 @@ public final class SelectCountryCodeViewController: UIViewController {
 
     private let tableView: UITableView = {
         let tableView = UITableView()
+        tableView.backgroundColor = UICustomization.Common.backgroundColor
         tableView.register(cellClass: SelectCountryCodeTableViewCell.self)
         tableView.register(cellClass: SelectCountryCodeEmptyStateTableViewCell.self)
         tableView.separatorInset = .init(top: 0, left: 16, bottom: 0, right: 16)
@@ -65,7 +66,7 @@ public final class SelectCountryCodeViewController: UIViewController {
 
 
     private func setupView() {
-        view.backgroundColor = .background.primary
+        view.backgroundColor = UICustomization.Common.backgroundColor
         searchFieldView.placeholder = "Search for a country"
 
         tableView.delegate = self

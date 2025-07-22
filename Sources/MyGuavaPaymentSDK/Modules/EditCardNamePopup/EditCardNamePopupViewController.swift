@@ -20,7 +20,7 @@ final class EditCardNamePopupViewController: UIViewController, EditCardNamePopup
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = 8
-        stackView.backgroundColor = .background.primary
+        stackView.backgroundColor = UICustomization.Common.backgroundColor
         stackView.layer.cornerRadius = 16
         stackView.isLayoutMarginsRelativeArrangement = true
         stackView.layoutMargins = .init(top: 24, left: 16, bottom: 24, right: 16)

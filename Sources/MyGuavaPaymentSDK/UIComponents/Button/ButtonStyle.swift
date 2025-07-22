@@ -74,10 +74,10 @@ extension Button {
         public var height: CGFloat = 24
         public var padding: UIEdgeInsets = .zero
         public var spacing: CGFloat = .spacing200
-        public var backgroundColor: UIColor = .button.primaryBackgroundRest
-        public var foregroundColor: UIColor = .foreground.onAccent
+        public var backgroundColor: UIColor = UICustomization.Button.backgroundColor
+        public var foregroundColor: UIColor = UICustomization.Button.textColor
         public var titleFont: UIFont = .body1Semibold
-        public var cornerRadius: CGFloat = .radius200
+        public var cornerRadius: CGFloat = UICustomization.Button.cornerRadius
         public var spinnerSize: SpinnerView.Size = .small
         public var focusedColor: UIColor = .border.focus
 

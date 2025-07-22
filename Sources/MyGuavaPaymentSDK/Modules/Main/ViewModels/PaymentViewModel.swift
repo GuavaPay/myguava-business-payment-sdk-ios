@@ -19,6 +19,18 @@ final class PaymentViewModel {
         payment.availableCardSchemes.isNotEmpty &&
         payment.availableCardSchemes.contains(where: { $0 != .none })
     }
+
+    var saveCardsIsEmpty: Bool {
+        (payment.savedCards.valid.count + payment.savedCards.invalid.count) == 0
+    }
+    
+    var validSaveCards: [Binding] {
+        payment.savedCards.valid
+    }
+    
+    var invalidSaveCards: [Binding] {
+        payment.savedCards.invalid
+    }
     
     var isAvailableApplePay: Bool {
         payment.availablePaymentMethods.contains { $0 == .applePay } &&

@@ -14,10 +14,10 @@ final class CardNumberFieldView: UIView {
 
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .gray200
-        view.layer.cornerRadius = 10
-        view.layer.borderWidth = 1
-        view.layer.borderColor = UIColor.input.borderRest.cgColor
+        view.backgroundColor = UICustomization.Input.backgroundColor
+        view.layer.cornerRadius = UICustomization.Input.cornerRadius
+        view.layer.borderWidth = UICustomization.Input.borderWidth
+        view.layer.borderColor = UICustomization.Input.borderColor.cgColor
         view.isSkeletonable = true
         return view
     }()
@@ -29,12 +29,12 @@ final class CardNumberFieldView: UIView {
         textField.attributedPlaceholder = NSAttributedString(
             string: "0000 0000 0000 0000",
             attributes: [
-                .foregroundColor: UIColor.foreground.secondary
+                .foregroundColor: UICustomization.Input.placeholderTextColor
             ]
         )
         textField.keyboardType = .numberPad
         textField.font = .body1Regular
-        textField.textColor = .input.primaryForeground
+        textField.textColor = UICustomization.Input.textColor
         textField.setLeftPadding(10)
         textField.addTarget(self, action: #selector(textDidChange), for: .editingChanged)
         textField.addTarget(self, action: #selector(textEditingDidEnd), for: .editingDidEnd)
@@ -54,7 +54,7 @@ final class CardNumberFieldView: UIView {
         imageView.contentMode = .scaleAspectFit
         imageView.layer.cornerRadius = 6
         imageView.layer.borderWidth = 1
-        imageView.layer.borderColor = UIColor(hex: "#EFEFF0").cgColor
+        imageView.layer.borderColor = UIColor.background.divider.cgColor
         imageView.clipsToBounds = true
         imageView.isHidden = true
         return imageView
@@ -63,8 +63,8 @@ final class CardNumberFieldView: UIView {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Card number"
+        label.textColor = UICustomization.Label.textColor
         label.font = .body1Regular
-        label.textColor = .input.primaryForeground
         label.isSkeletonable = true
         return label
     }()

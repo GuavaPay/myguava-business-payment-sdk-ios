@@ -11,7 +11,7 @@ struct BindingsEndpoint: APIEndpoint {
     let path = "bindings"
     let method: HTTPMethod = .get
     var queryItems: [URLQueryItem]? = nil
-    let body: [String: Any]? = nil
+    var body: [String: Any]? = nil
 }
 
 struct BindingsService {
