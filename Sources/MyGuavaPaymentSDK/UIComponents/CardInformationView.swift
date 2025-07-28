@@ -15,18 +15,25 @@ final class CardInformationView: UIView {
         case cardNumber(String)
         case expirationDate(month: String, year: String)
         case securityCode(Int)
+        case cardName(String)
+        case cardHolderName(String)
     }
 
     let cardNumberView = CardNumberFieldView()
     let expirationView = CardExpirationDateFieldView()
     let securityCodeView = SecurityCodeInputView()
+    let cardHolderNameFieldView = CardholderNameFieldView()
 
-    var onSaveCardTapped: (() -> Void)?
+    var onSaveCardTapped: ((Bool) -> Void)?
     var onScanButtonTapped: (() -> Void)?
     var onFieldEndEditing: ((Field) -> Void)?
+    var onNewCardNameTextChange: ((String) -> Void)?
+
+    private let checkboxEmptyImage = Icons.checkboxEmpty.withRenderingMode(.alwaysTemplate)
 
     private lazy var checkboxImageView: UIImageView = {
-        let imageView = UIImageView(image: Icons.checkboxEmpty)
+        let imageView = UIImageView(image: checkboxEmptyImage)
+        imageView.tintColor = UICustomization.Input.textColor
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
@@ -100,8 +107,6 @@ final class CardInformationView: UIView {
         setupLayout()
         bindActions()
         showShimmerIfNeeded()
-        
-        setSaveCardVisible(false)
     }
 
     required init?(coder: NSCoder) {
@@ -125,13 +130,16 @@ final class CardInformationView: UIView {
         saveCardContainer.addSubview(saveCardStack)
 
         bottomSectionStack.addArrangedSubview(bottomInputsStack)
-        bottomSectionStack.setCustomSpacing(20, after: bottomInputsStack)
+        bottomSectionStack.addArrangedSubview(cardHolderNameFieldView)
+        bottomSectionStack.setCustomSpacing(16, after: cardHolderNameFieldView)
         bottomSectionStack.addArrangedSubview(saveCardContainer)
+        bottomSectionStack.setCustomSpacing(16, after: saveCardContainer)
         bottomSectionStack.addArrangedSubview(cardNameFieldView)
 
         cardContainerStack.addArrangedSubview(cardNumberView)
         cardContainerStack.setCustomSpacing(16, after: cardNumberView)
         cardContainerStack.addArrangedSubview(bottomSectionStack)
+        
     }
 
     private func setupLayout() {
@@ -152,7 +160,11 @@ final class CardInformationView: UIView {
         }
     }
     
-    func setSaveCardVisible(_ isVisible: Bool) {
+    func hideCardholderInput() {
+        cardHolderNameFieldView.isHidden = true
+    }
+    
+    func setSaveCardCheckboxVisible(_ isVisible: Bool) {
         if isVisible {
             if bottomSectionStack.arrangedSubviews.contains(saveCardContainer) == false {
                 bottomSectionStack.insertArrangedSubview(saveCardContainer, at: 1)
@@ -176,14 +188,21 @@ final class CardInformationView: UIView {
             self?.onFieldEndEditing?(.cardNumber(digits))
         }
 
+        cardNameFieldView.onTextChanged = { [weak self] text in
+            self?.onFieldEndEditing?(.cardName(text))
+        }
+
         expirationView.onEndEditing = { [weak self] month, year in
             self?.onFieldEndEditing?(.expirationDate(month: month, year: year))
         }
 
         securityCodeView.onEndEditing = { [weak self] digits in
             guard let code = Int(digits) else { return }
-
             self?.onFieldEndEditing?(.securityCode(code))
+        }
+        
+        cardHolderNameFieldView.onTextChanged = { [weak self] text in
+            self?.onFieldEndEditing?(.cardHolderName(text))
         }
     }
 
@@ -192,7 +211,7 @@ final class CardInformationView: UIView {
         if isAdditionalViewVisible {
             cardNameFieldHeightConstraint?.update(offset: 0)
             bottomSpacerHeightConstraint?.update(offset: 0)
-            checkboxImageView.image = Icons.checkboxEmpty
+            checkboxImageView.image = checkboxEmptyImage
         } else {
             cardNameFieldHeightConstraint?.update(offset: 74)
             bottomSpacerHeightConstraint?.update(offset: 24)
@@ -208,7 +227,7 @@ final class CardInformationView: UIView {
             }
         })
         isAdditionalViewVisible.toggle()
-        onSaveCardTapped?()
+        onSaveCardTapped?(isAdditionalViewVisible)
     }
 
     private func showShimmerIfNeeded() {
@@ -219,10 +238,12 @@ final class CardInformationView: UIView {
 
             cardNameFieldView.showLoading()
             startShimmering()
+            cardHolderNameFieldView.showLoading()
         } else {
             cardNumberView.hideLoading()
             expirationView.hideLoading()
             securityCodeView.hideLoading()
+            cardHolderNameFieldView.hideLoading()
 
             cardNameFieldView.hideLoading()
             stopShimmering()
@@ -240,21 +261,22 @@ final class CardInformationView: UIView {
     }
     
     func disable() {
-        cardNumberView.showState(.disable)
         expirationView.disable()
+        cardHolderNameFieldView.disable()
+        cardNumberView.showState(.disable)
         securityCodeView.showState(.disable)
-        setSaveCardVisible(false)
+        setSaveCardCheckboxVisible(false)
     }
 }
 
 // MARK: - CardInformationView + ShimmerableView
 
 extension CardInformationView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [saveCardContainer]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [saveCardContainer: .automatic]
     }
 }

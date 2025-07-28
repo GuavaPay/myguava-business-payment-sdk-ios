@@ -7,7 +7,7 @@
 
 import UIKit
 
-public final class SelectFieldView: UIView {
+final class SelectFieldView: UIView {
 
     private let mainContainerStackView: UIStackView = {
         let stackView = UIStackView()
@@ -63,7 +63,7 @@ public final class SelectFieldView: UIView {
         return stackView
     }()
 
-    public let textField: UITextField = {
+    let textField: UITextField = {
         let textField = UITextField()
         textField.addKeyboardDoneToToolbar()
         textField.borderStyle = .none
@@ -110,7 +110,7 @@ public final class SelectFieldView: UIView {
 
     // MARK: - Properties
 
-    public weak var delegate: UITextFieldDelegate? {
+    weak var delegate: UITextFieldDelegate? {
         didSet {
             textField.delegate = delegate
         }
@@ -126,21 +126,21 @@ public final class SelectFieldView: UIView {
     }
     
     /// Enables manual text input into the selector. Disabled by default.
-    public var isEnabled: Bool = false {
+    var isEnabled: Bool = false {
         didSet {
             textField.isEnabled = isEnabled
         }
     }
 
     /// Allows you to set the current state for the selector
-    public var state: State? {
+    var state: State? {
         didSet {
             applyStyle()
         }
     }
     
     /// Allows you to set the message text for the left part under the selector field
-    public var bottomLeftText: String? {
+    var bottomLeftText: String? {
         didSet {
             bottomLeftLabel.text = bottomLeftText
             applyStyle()
@@ -148,7 +148,7 @@ public final class SelectFieldView: UIView {
     }
 
     /// Allows you to set the message text for the right part under the selector field
-    public var bottomRightText: String? {
+    var bottomRightText: String? {
         didSet {
             bottomRightLabel.text = bottomRightText
             applyStyle()
@@ -156,10 +156,10 @@ public final class SelectFieldView: UIView {
     }
     
     /// Short circuit triggered by textfield value change
-    public var valueChanged: ((String) -> Void)?
+    var valueChanged: ((String) -> Void)?
     
     /// Callback called when the component is clicked
-    public var onAction: (() -> Void)?
+    var onAction: (() -> Void)?
 
     private var placeholderText: String?
 
@@ -172,7 +172,7 @@ public final class SelectFieldView: UIView {
     ///   - placeholderText: Allows you to set the placeholder text
     ///   - bottomLeftText: Allows you to set the message text for the left part under the selector field
     ///   - bottomRightText: Allows you to set the message text for the right part under the selector field
-    public init(
+    init(
         state: State = .enabled,
         placeholderText: String? = nil,
         bottomLeftText: String? = nil,
@@ -198,25 +198,25 @@ public final class SelectFieldView: UIView {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Public methods
+    // MARK: - methods
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         applyStyle()
     }
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         return CGSize(width: UIView.noIntrinsicMetric, height: style.height)
     }
     
     /// Sets dropDown Image
-    public func setDropDownImage(_ image: UIImage?) {
+    func setDropDownImage(_ image: UIImage?) {
         dropDownArrowImageView.image = image
         applyStyle()
     }
 
     /// Allows you to set the primary icon on the left side of the selector
     /// - Parameter view: Represents an enumeration for selecting the type of view to be embedded.
-    public func setIconView(_ view: TypeIconView) {
+    func setIconView(_ view: TypeIconView) {
         iconContainerView.subviews.forEach {
             $0.removeFromSuperview()
         }
@@ -254,17 +254,17 @@ public final class SelectFieldView: UIView {
     }
     
     /// Allows you to set the placeholder text
-    public func setPlaceholderText(_ text: String) {
+    func setPlaceholderText(_ text: String) {
         placeholderLabel.text = text
     }
     
     /// Allows you to set the text of the title field
-    public func setTitleText(_ text: String) {
+    func setTitleText(_ text: String) {
         titleLabel.text = text
     }
     
     /// Allows you to set the base text for the selector
-    public func setInputText(_ text: String) {
+    func setInputText(_ text: String) {
         textField.text = text
     }
 
@@ -402,7 +402,7 @@ public final class SelectFieldView: UIView {
 }
 
 extension SelectFieldView {
-    public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         guard state != .disabled
                 && state != .loading
@@ -414,7 +414,7 @@ extension SelectFieldView {
         state = .pressed
     }
 
-    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
         guard state != .disabled
                 && state != .loading
@@ -430,7 +430,7 @@ extension SelectFieldView {
         onAction?()
     }
 
-    public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesCancelled(touches, with: event)
         guard state != .disabled
                 && state != .loading
@@ -445,7 +445,7 @@ extension SelectFieldView {
         }
     }
 
-    public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesMoved(touches, with: event)
         guard state != .disabled
                 && state != .loading
@@ -463,7 +463,7 @@ extension SelectFieldView {
 
 // MARK: - TypeIconView
 
-public extension SelectFieldView {
+extension SelectFieldView {
     enum TypeIconView {
         case flag(view: UIView)
         case card(view: UIView)

@@ -7,14 +7,14 @@
 
 import UIKit
 
-public final class RadioButtonView: UIView {
+final class RadioButtonView: UIView {
 
     private let strokeLayer = CAShapeLayer()
     private let checkLayer = CAShapeLayer()
-    
+
     let style: RadioButtonStyleProtocol = RadioButtonStyle()
 
-    public var onChecked: Bool = false {
+    var onChecked: Bool = false {
         didSet {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
@@ -23,7 +23,7 @@ public final class RadioButtonView: UIView {
         }
     }
 
-    public var isEnabled: Bool = true {
+    var isEnabled: Bool = true {
         didSet {
             configureColors()
         }
@@ -40,7 +40,7 @@ public final class RadioButtonView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         configureColors()
     }

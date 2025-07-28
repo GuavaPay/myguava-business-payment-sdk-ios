@@ -9,9 +9,9 @@ import UIKit
 import SkeletonView
 
 /// Settings for shimmer loading appearance configuration
-public enum ShimmerableViewConfiguration {
+enum ShimmerableViewConfiguration {
     /// Corner radius to be set on views, labels are calculated automatically with following formula: label.font.pointSize / 2
-    public enum ViewCornerRadius {
+    enum ViewCornerRadius {
         /// Uses view's itself's corner radius
         case asView
         /// Uses corner radius passed to the argument for shimmer
@@ -23,7 +23,7 @@ public enum ShimmerableViewConfiguration {
 }
 
 /// Protocol for views which need shimmer loading support
-public protocol ShimmerableView {
+protocol ShimmerableView {
     /// Views which need to be shimmered
     var shimmeringViews: [UIView] { get }
 
@@ -50,7 +50,7 @@ public protocol ShimmerableView {
 
 // MARK: - ShimmerableView default implementation
 
-public extension ShimmerableView {
+extension ShimmerableView {
     private static var gradient: SkeletonGradient {
         SkeletonGradient(baseColor: .other.shimmerBase, secondaryColor: .other.shimmerGlow)
     }
@@ -104,7 +104,6 @@ public extension ShimmerableView {
             }
         }
     }
-
 
     func stopShimmering() {
         stopShimmering(for: shimmeringViews)

@@ -30,7 +30,7 @@ protocol QRCodeScannerModuleInput: AnyObject {
     func configure(_ output: QRCodeScannerModuleOutput?)
 }
 
-public protocol QRCodeScannerModuleOutput: AnyObject {
+protocol QRCodeScannerModuleOutput: AnyObject {
 
     func didScanCode(foundValue: String)
 }

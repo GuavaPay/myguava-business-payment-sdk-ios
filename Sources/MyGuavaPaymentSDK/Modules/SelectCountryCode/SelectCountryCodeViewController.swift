@@ -8,7 +8,7 @@
 import UIKit
 import SnapKit
 
-public final class SelectCountryCodeViewController: UIViewController {
+final class SelectCountryCodeViewController: UIViewController {
 
     /// Closure to handle search value change.
     var onSearchValueChanged: ((String) -> Void)?
@@ -57,7 +57,7 @@ public final class SelectCountryCodeViewController: UIViewController {
 
     // MARK: - Lifecycle
 
-    public override func viewDidLoad() {
+    override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
         setupConstraints()
@@ -118,7 +118,7 @@ public final class SelectCountryCodeViewController: UIViewController {
 }
 
 extension SelectCountryCodeViewController: UITableViewDelegate {
-    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         guard let output = output else {
             return
@@ -129,11 +129,11 @@ extension SelectCountryCodeViewController: UITableViewDelegate {
 }
 
 extension SelectCountryCodeViewController: UITableViewDataSource {
-    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         output?.numberOfRows() ?? 0
     }
     
-    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let output = output else {
             return UITableViewCell()
         }

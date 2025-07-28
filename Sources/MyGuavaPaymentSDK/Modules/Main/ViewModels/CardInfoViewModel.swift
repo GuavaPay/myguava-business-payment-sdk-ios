@@ -12,7 +12,9 @@ final class CardInfoViewModel {
     var expiryMonth: String = ""
     var expiryYear: String = ""
     var cvv: String = ""
-    
+    var cardName: String?
+    var cardholderName: String?
+
     var isValid: Bool {
         isValidCardNumber(number) &&
         !expiryMonth.isEmpty && expiryMonth.count > 1 &&
@@ -31,4 +33,9 @@ final class CardInfoViewModel {
             digitsOnly.isSuperset(of: validCharacters) &&
             (cvv.count == 3 || cvv.count == 4)
     }
+}
+
+final class BindingInfoViewModel {
+    var bindingId: String = ""
+    var cvv2: Int = 0
 }

@@ -9,7 +9,7 @@ import UIKit
 
 extension Button {
 
-    public protocol StyleFactory {
+    protocol StyleFactory {
         func paddingForSize(size: Size, type: ButtonType) -> UIEdgeInsets
         func makeStyle(state: State,
                        scheme: Scheme,
@@ -19,7 +19,7 @@ extension Button {
 
     
     /// Button height, width is per content or outside constraints
-    public enum Size: Equatable {
+    enum Size: Equatable {
         /// 48
         case large
         /// 40
@@ -46,7 +46,7 @@ extension Button {
         static let allCases: [Button.Size] = [.small, .medium, .large, .custom(80)]
     }
 
-    public enum State: CaseIterable {
+    enum State: CaseIterable {
         case enabled
         case hovered
         case pressed
@@ -55,39 +55,39 @@ extension Button {
         case loading
     }
 
-    public enum Scheme: CaseIterable {
+    enum Scheme: CaseIterable {
         case primary
         case secondary
         case danger
         case ghost
     }
 
-    public protocol Style: CornerRadius, BackgroundColor, ForegroundColor, TitleFont, Padding, StackSpacing, Height {
+    protocol Style: CornerRadius, BackgroundColor, ForegroundColor, TitleFont, Padding, StackSpacing, Height {
         var spinnerSize: SpinnerView.Size { get }
         var focusedColor: UIColor { get set }
 
         func focusedColor(_ value: UIColor) -> Self
     }
 
-    public struct StockStyle: Style {
+    struct StockStyle: Style {
         /// Button height defaults to .small
-        public var height: CGFloat = 24
-        public var padding: UIEdgeInsets = .zero
-        public var spacing: CGFloat = .spacing200
-        public var backgroundColor: UIColor = UICustomization.Button.backgroundColor
-        public var foregroundColor: UIColor = UICustomization.Button.textColor
-        public var titleFont: UIFont = .body1Semibold
-        public var cornerRadius: CGFloat = UICustomization.Button.cornerRadius
-        public var spinnerSize: SpinnerView.Size = .small
-        public var focusedColor: UIColor = .border.focus
+        var height: CGFloat = 24
+        var padding: UIEdgeInsets = .zero
+        var spacing: CGFloat = .spacing200
+        var backgroundColor: UIColor = UICustomization.Button.backgroundColor
+        var foregroundColor: UIColor = UICustomization.Button.textColor
+        var titleFont: UIFont = .body1Semibold
+        var cornerRadius: CGFloat = UICustomization.Button.cornerRadius
+        var spinnerSize: SpinnerView.Size = .small
+        var focusedColor: UIColor = .border.focus
 
-        public func spinnerSize(_ value: SpinnerView.Size) -> Self {
+        func spinnerSize(_ value: SpinnerView.Size) -> Self {
             var copy = self
             copy.spinnerSize = value
             return copy
         }
 
-        public func focusedColor(_ value: UIColor) -> Self {
+        func focusedColor(_ value: UIColor) -> Self {
             var copy = self
             copy.focusedColor = value
             return copy
@@ -166,7 +166,7 @@ extension Button {
             case (.enabled, .danger):
                 return stock
                     .backgroundColor(.button.dangerBackgroundRest)
-                    .foregroundColor(.button.primaryBackgroundRest)
+                    .foregroundColor(.button.primaryForegroundRest)
             case (.enabled, .ghost):
                 return stock
                     .backgroundColor(.clear)

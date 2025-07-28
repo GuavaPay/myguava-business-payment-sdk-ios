@@ -7,8 +7,8 @@
 
 import class UIKit.UIViewController
 
-public final class SelectCountryCodeAssembly {
-    public static func assemble(
+final class SelectCountryCodeAssembly {
+    static func assemble(
         selectedItem: CountryResponse?,
         output: SelectCountryCodeModuleOutput? = nil
     ) -> UIViewController {

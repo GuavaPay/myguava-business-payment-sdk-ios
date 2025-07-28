@@ -95,6 +95,27 @@ public protocol PaymentDelegate: AnyObject {
     func handleOrderDidNotGet()
 }
 
+public extension PaymentDelegate {
+    func handlePaymentResult(_ result: Result<ResultDataModel, OrderStatusError>) {}
+
+    func handlePaymentCancel() {}
+
+    func handlePaymentResult(_ result: PaymentStatus) {
+        switch result {
+        case .success(let resultDataModel), .unsuccess(let resultDataModel):
+            let oldResultModel: Result<ResultDataModel, OrderStatusError> = .success(resultDataModel)
+            self.handlePaymentResult(oldResultModel)
+
+        case .error(let orderStatusError):
+            let oldResultModel: Result<ResultDataModel, OrderStatusError> = .failure(orderStatusError)
+            self.handlePaymentResult(oldResultModel)
+
+        case .cancel:
+            handlePaymentCancel()
+        }
+    }
+}
+
 /// A configuration object for customizing the payment flow.
 public struct PaymentConfig {
     /// Supported card schemes for payment.
@@ -131,9 +152,12 @@ public struct PaymentConfig {
     public let availablePaymentMethods: [PaymentMethod]
     /// Array of allowed card product categories (e.g., debit, credit).
     public let availableCardProductCategories: [PaymentCardProductCategory]
-    
+    /// Indicates whether the cardholder name input field should be disabled.
+    /// If `true`, the cardholder name field will not be shown on the payment form.
+    public let disableCardholderNameInput: Bool
+
     /// Creates a new instance of `PaymentConfig`.
-    /// 
+    ///
     /// - Parameters:
     ///   - sessionToken: The session token for authenticating the payment.
     ///   - orderId: The order ID being paid.
@@ -155,7 +179,8 @@ public struct PaymentConfig {
         ],
         availableCardProductCategories: [PaymentCardProductCategory] = [
             .credit, .debit, .prepaid
-        ]
+        ],
+        disableCardholderNameInput: Bool = false
     ) {
         self.sessionToken = sessionToken
         self.orderId = orderId
@@ -164,6 +189,7 @@ public struct PaymentConfig {
         self.availableCardSchemes = availableCardSchemes
         self.availablePaymentMethods = availablePaymentMethods
         self.availableCardProductCategories = availableCardProductCategories
+        self.disableCardholderNameInput = disableCardholderNameInput
     }
 }
 
@@ -179,6 +205,8 @@ public final class PaymentAssembly {
         let orderService = OrderService()
         let applePayManager = ApplePayManager(orderService: orderService, orderId: config.orderId)
         let statusReceiver = PaymentStatusReceiver()
+
+        UICustomizationProvider.shared.setUICustomization(config.uiCustomization)
 
         let interactor = PaymentInteractor(
             config: config,
@@ -205,8 +233,6 @@ public final class PaymentAssembly {
         applePayManager.delegate = interactor
         statusReceiver.delegate = interactor
         interactor.mainVC = viewController
-
-        UICustomizationProvider.shared.setUICustomization(config.uiCustomization)
 
         return viewController
     }

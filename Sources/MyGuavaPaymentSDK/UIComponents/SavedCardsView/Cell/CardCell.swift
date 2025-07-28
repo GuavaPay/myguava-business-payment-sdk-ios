@@ -12,6 +12,7 @@ final class CardCell: UITableViewCell {
 
     var onEditButtonTapped: (() -> Void)?
     var onDeleteButtonTapped: (() -> Void)?
+    var onCVVCodeEndEditing: ((String) -> Void)?
 
     var isEdit: Bool = false {
         didSet {
@@ -75,7 +76,7 @@ final class CardCell: UITableViewCell {
         view.layer.cornerRadius = 6
         view.layer.masksToBounds = true
         view.layer.borderWidth = 1
-        view.layer.borderColor = UIColor.border.primary.cgColor
+        view.layer.borderColor = UICustomization.Input.borderColor.cgColor
         return view
     }()
 
@@ -116,12 +117,13 @@ final class CardCell: UITableViewCell {
 
     private let moreButton: UIButton = {
         let button = UIButton()
-        button.setImage(Icons.more, for: .normal)
-        button.backgroundColor = .background.secondary
-        button.layer.cornerRadius = 8
+        button.setImage(Icons.more.withRenderingMode(.alwaysTemplate), for: .normal)
+        button.backgroundColor = UICustomization.Button.backgroundColor
+        button.tintColor = UICustomization.Button.textColor
+        button.layer.cornerRadius = UICustomization.Button.cornerRadius
         button.layer.masksToBounds = true
-        button.layer.borderWidth = 1
-        button.layer.borderColor = UIColor.border.primary.cgColor
+        button.layer.borderWidth = UICustomization.Button.borderWidth
+        button.layer.borderColor = UICustomization.Button.borderColor.cgColor
         button.imageView?.contentMode = .scaleAspectFit
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
         return button
@@ -131,23 +133,24 @@ final class CardCell: UITableViewCell {
         let button = UIButton()
         button.setImage(Icons.trash.withRenderingMode(.alwaysTemplate), for: .normal)
         button.backgroundColor = .button.dangerBackgroundRest
-        button.layer.cornerRadius = 8
+        button.tintColor = UICustomization.Button.textColor
+        button.layer.cornerRadius = UICustomization.Button.cornerRadius
         button.layer.masksToBounds = true
         button.imageView?.contentMode = .scaleAspectFit
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
-        button.tintColor = .background.primary
         button.isHidden = true
         return button
     }()
 
     private let editButton: UIButton = {
         let button = UIButton()
-        button.setImage(Icons.pencil, for: .normal)
-        button.backgroundColor = .background.primary
-        button.layer.cornerRadius = 8
+        button.setImage(Icons.pencil.withRenderingMode(.alwaysTemplate), for: .normal)
+        button.backgroundColor = UICustomization.Button.backgroundColor
+        button.tintColor = UICustomization.Button.textColor
+        button.layer.cornerRadius = UICustomization.Button.cornerRadius
         button.layer.masksToBounds = true
-        button.layer.borderWidth = 1
-        button.layer.borderColor = UIColor.foreground.onAccent.cgColor
+        button.layer.borderWidth = UICustomization.Button.borderWidth
+        button.layer.borderColor = UICustomization.Button.borderColor.cgColor
         button.imageView?.contentMode = .scaleAspectFit
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
         button.isHidden = true
@@ -183,7 +186,7 @@ final class CardCell: UITableViewCell {
     }
 
     private func setupUI() {
-        backgroundColor = .background.primary
+        backgroundColor = .clear
         selectionStyle = .none
         radioButton.isUserInteractionEnabled = false
         cardInfoContainerStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -191,6 +194,10 @@ final class CardCell: UITableViewCell {
         moreButton.addTarget(self, action: #selector(didTapMoreButton), for: .touchUpInside)
         trashButton.addTarget(self, action: #selector(didTapTrashButton), for: .touchUpInside)
         editButton.addTarget(self, action: #selector(didTapEditButton), for: .touchUpInside)
+
+        securityCodeInputView.onCVVCodeEndEditing = { [weak self] code in
+            self?.onCVVCodeEndEditing?(code)
+        }
 
         paymentIconContainer.addSubview(paymentIconImageView)
 
@@ -261,7 +268,7 @@ final class CardCell: UITableViewCell {
 
         cardInfoContainerStack.layer.borderWidth = isSelected ? 2 : 1
         cardInfoContainerStack.layer.borderColor = isSelected
-        ? UIColor.input.borderFocused.cgColor
+        ? UICustomization.SelectItem.accentColor.cgColor
         : UIColor.border.primary.cgColor
       }
 
@@ -270,7 +277,8 @@ final class CardCell: UITableViewCell {
             return
         }
 
-        moreButton.setImage(isHidden ? Icons.smallClose : Icons.more, for: .normal)
+        let image = isHidden ? Icons.smallClose : Icons.more
+        moreButton.setImage(image.withRenderingMode(.alwaysTemplate), for: .normal)
 
         UIView.animate(
             withDuration: 0.33,
@@ -318,8 +326,8 @@ final class CardCell: UITableViewCell {
 
     func configure(with viewModel: Binding) {
         paymentIconImageView.image = viewModel.cardData?.cardScheme.icon
-        cardNameLabel.text = viewModel.cardData?.cardScheme.rawValue
-        cardNumberLabel.text = viewModel.cardData?.maskedPan
+        cardNameLabel.text = viewModel.name
+        cardNumberLabel.text = String(viewModel.cardData?.maskedPan?.suffix(5) ?? "")
         securityCodeInputView.maxLength = viewModel.cardData?.cardScheme.cvvLength ?? 3
         isEnabled = viewModel.isEnabled
     }
@@ -328,6 +336,10 @@ final class CardCell: UITableViewCell {
 // MARK: - Redesign.CryptoNewsCell + ShimmerableCell
 
 extension CardCell: ShimmerableCell {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+        [mainContainerStack: .value(Int(UICustomization.Button.cornerRadius))]
+    }
+
     var shimmeringViews: [UIView] {
         [mainContainerStack]
     }

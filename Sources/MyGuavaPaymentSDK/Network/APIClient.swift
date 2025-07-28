@@ -27,8 +27,8 @@ enum APIError: Error {
 }
 
 struct APIResponse<T: Decodable> {
-    public let statusCode: Int
-    public let model: T?
+    let statusCode: Int
+    let model: T?
 }
 
 final class APIClient {

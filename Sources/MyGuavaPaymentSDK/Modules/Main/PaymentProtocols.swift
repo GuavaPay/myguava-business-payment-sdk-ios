@@ -27,6 +27,9 @@ protocol PaymentViewInput: AnyObject {
     func disablePaymentCard()
     func disableAllPayments()
     func disableSaveCards()
+    func hideSaveCards(_ isHidden: Bool)
+    func hideCardholderInput()
+    func setIsBindingAvailable(_ isBindingAvailable: Bool)
 }
 
 protocol PaymentViewOutput {
@@ -40,17 +43,21 @@ protocol PaymentViewOutput {
     func didTapConfirmButton()
     func didCloseView()
     func didTapScanCard()
+    func didTapSaveNewCard(_ needSaveNewCard: Bool)
+    func didChangeNewCardName(_ name: String)
+    func didSelectSavedCards(_ showSaveCards: Bool)
+    func didChangeSavedCardCVV(_ indexPath: IndexPath, code: String)
     func didTapContactInformationSaveButton(phoneNumber: String, email: String)
 }
 
 protocol PaymentInteractorInput {
-    var availableCardSchemes: [CardScheme] { get }
-
     func getOrder(shouldRetry: Bool)
-    func preCreatePayment(cardInfo: CardInfo, contactInfo: ContactInfo?)
+    func preCreatePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool)
     func payApple()
     func resolveCardNumber(_ cardNumber: String)
     func getCountries()
+    func renameCard(bindingId: String, name: String, completion: @escaping () -> Void)
+    func deleteCard(bindingId: String, completion: @escaping () -> Void)
 }
 
 protocol PaymentInteractorOutput: AnyObject {
@@ -60,6 +67,8 @@ protocol PaymentInteractorOutput: AnyObject {
     func didExecutePayment(_ status: PaymentStatus)
     func didGetCountries(_ countries: [CountryResponse])
     func didResolveCardNumber(_ model: ResolveCard?)
+    func setIsBindingAvailable(_ isBindingAvailable: Bool)
+    func hideCardholderInput()
     func showLoading()
     func stopLoading()
 }
@@ -78,6 +87,7 @@ protocol PaymentRouterInput: Router {
         output: SelectCountryCodeModuleOutput?
     )
     func showPopup(
+        cardName: String,
         deleteAction: (() -> Void)?,
         cancelAction: (() -> Void)?
     )

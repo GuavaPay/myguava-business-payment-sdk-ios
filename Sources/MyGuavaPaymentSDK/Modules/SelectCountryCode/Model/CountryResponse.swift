@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct CountryResponse: Decodable {
+struct CountryResponse: Decodable {
     var countryCode: String
     var countryName: String
     var phoneCode: String

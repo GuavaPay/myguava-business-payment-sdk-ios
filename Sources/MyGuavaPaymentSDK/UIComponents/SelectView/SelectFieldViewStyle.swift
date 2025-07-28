@@ -8,7 +8,7 @@
 import UIKit
 
 extension SelectFieldView {
-    public enum State: CaseIterable {
+    enum State: CaseIterable {
         case enabled
         case pressed
         case error
@@ -78,7 +78,7 @@ extension SelectFieldView {
         }
     }
 
-    public protocol Style: BorderColor,
+    protocol Style: BorderColor,
                            BorderWidth,
                            BackgroundColor,
                            CornerRadius,
@@ -103,71 +103,71 @@ extension SelectFieldView {
         func bottomTextFont(_ value: UIFont) -> Self
     }
 
-    public struct StockStyle: Style {
-        public var inputTextFont: UIFont
-        public var titleTextFont: UIFont
-        public var placeholderTextFont: UIFont
-        public var bottomTextFont: UIFont
-        public var tintColor: UIColor
-        public var borderColor: UIColor
-        public var borderWidth: CGFloat
-        public var backgroundColor: UIColor
-        public var cornerRadius: CGFloat
-        public var height: CGFloat
-        public var textColor: UIColor
-        public var placeholderTextColor: UIColor
-        public var titleTextColor: UIColor
-        public var bottomTextColor: UIColor
+    struct StockStyle: Style {
+        var inputTextFont: UIFont
+        var titleTextFont: UIFont
+        var placeholderTextFont: UIFont
+        var bottomTextFont: UIFont
+        var tintColor: UIColor
+        var borderColor: UIColor
+        var borderWidth: CGFloat
+        var backgroundColor: UIColor
+        var cornerRadius: CGFloat
+        var height: CGFloat
+        var textColor: UIColor
+        var placeholderTextColor: UIColor
+        var titleTextColor: UIColor
+        var bottomTextColor: UIColor
 
-        public func textColor(_ value: UIColor) -> Self {
+        func textColor(_ value: UIColor) -> Self {
             var copy = self
             copy.textColor = value
             return copy
         }
 
-        public func placeholderTextColor(_ value: UIColor) -> Self {
+        func placeholderTextColor(_ value: UIColor) -> Self {
             var copy = self
             copy.placeholderTextColor = value
             return copy
         }
 
-        public func titleTextColor(_ value: UIColor) -> Self {
+        func titleTextColor(_ value: UIColor) -> Self {
             var copy = self
             copy.titleTextColor = value
             return copy
         }
 
-        public func bottomTextColor(_ value: UIColor) -> Self {
+        func bottomTextColor(_ value: UIColor) -> Self {
             var copy = self
             copy.bottomTextColor = value
             return copy
         }
 
-        public func inputTextFont(_ value: UIFont) -> Self {
+        func inputTextFont(_ value: UIFont) -> Self {
             var copy = self
             copy.inputTextFont = value
             return copy
         }
 
-        public func titleTextFont(_ value: UIFont) -> Self {
+        func titleTextFont(_ value: UIFont) -> Self {
             var copy = self
             copy.titleTextFont = value
             return copy
         }
 
-        public func placeholderTextFont(_ value: UIFont) -> Self {
+        func placeholderTextFont(_ value: UIFont) -> Self {
             var copy = self
             copy.placeholderTextFont = value
             return copy
         }
 
-        public func bottomTextFont(_ value: UIFont) -> Self {
+        func bottomTextFont(_ value: UIFont) -> Self {
             var copy = self
             copy.bottomTextFont = value
             return copy
         }
 
-        public init(
+        init(
             inputTextFont: UIFont = .body1Regular,
             titleTextFont: UIFont = .body1Regular,
             placeholderTextFont: UIFont = .body1Regular,
@@ -202,7 +202,7 @@ extension SelectFieldView {
 }
 
 extension SelectFieldView.Style {
-    public static func getStyle(_ state: SelectFieldView.State) -> SelectFieldView.Style {
+    static func getStyle(_ state: SelectFieldView.State) -> SelectFieldView.Style {
         let stock = SelectFieldView.StockStyle(
             borderColor: UICustomization.Input.borderColor,
             borderWidth: UICustomization.Input.borderWidth,

@@ -9,7 +9,7 @@ import Foundation
 
 public enum WSEnvironment: String {
     case sandbox
-    
+
     var baseURL: String {
         switch self {
         case .sandbox:
@@ -21,22 +21,25 @@ public enum WSEnvironment: String {
 final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var session: URLSession?
     private var webSocketTask: URLSessionWebSocketTask?
-    private var onEvent: ((String) -> Void)?
     private let environment: WSEnvironment
     private let token: String
     private let endpoint: String
     private let queryItems: [URLQueryItem]?
     private var reconnectTimer: Timer?
     private var pingTimer: Timer?
-    
+
     private let pingInterval: TimeInterval = 15
     private let reconnectInterval: TimeInterval = 5
-    
-    private var failureRetryCount = 3
-    private var currentRetryCount = 0
-    
+
+    private var failureConnectionRetryCount = 3
+    private var currentConnectionRetryCount = 0
+
+    private var failurePingRetryCount = 5
+    private var currentPingRetryCount = 0
+
+    private var onEvent: ((String) -> Void)?
     private var onFailure: ((Error) -> Void)?
-    
+
     init(
         environment: WSEnvironment,
         token: String,
@@ -48,49 +51,49 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         self.endpoint = endpoint
         self.queryItems = queryItems
     }
-    
+
     func startListening(
         onEvent: @escaping (String) -> Void,
         onFailure: ((Error) -> Void)? = nil) {
-            
+
             self.onEvent = onEvent
             self.onFailure = onFailure
-            
+
             var urlString = environment.baseURL + endpoint
-            
+
             // !!!: Don't user URLComponent because it replaces wss to https
             if let queryItems = queryItems, !queryItems.isEmpty {
                 let query = queryItems.map { "\($0.name)=\($0.value ?? "")" }
                     .joined(separator: "&")
                 urlString += "?" + query
             }
-            
+
             guard let url = URL(string: urlString) else {
                 print("[WebSocketClient] Invalid WS URL: \(urlString)")
                 return
             }
-            
+
             let config = URLSessionConfiguration.default
             config.httpAdditionalHeaders = [
                 "Authorization": "Bearer \(token)",
                 "Content-Type": "application/json"
             ]
-            
+
             session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
             webSocketTask = session?.webSocketTask(with: url)
             webSocketTask?.resume()
-            
+
             listen()
             startPing()
         }
-    
+
     func stopListening() {
         pingTimer?.invalidate()
         reconnectTimer?.invalidate()
-        
+
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         session?.invalidateAndCancel()
-        
+
         webSocketTask = nil
         session = nil
     }
@@ -105,7 +108,7 @@ private extension WebSocketClient {
 
             switch result {
             case .success(let message):
-                self.currentRetryCount = 0
+                self.currentConnectionRetryCount = 0
 
                 switch message {
                 case .string(let text):
@@ -121,40 +124,53 @@ private extension WebSocketClient {
             case .failure(let error):
                 print("[WebSocketClient] Receive failed: \(error)")
 
-                if self.currentRetryCount < self.failureRetryCount {
-                    self.currentRetryCount += 1
-                    print("[WebSocketClient] Retrying (\(self.currentRetryCount)/\(self.failureRetryCount))...")
+                if self.currentConnectionRetryCount < self.failureConnectionRetryCount {
+                    self.currentConnectionRetryCount += 1
+                    print("[WebSocketClient] Retrying (\(self.currentConnectionRetryCount)/\(self.failureConnectionRetryCount))...")
                     self.scheduleReconnect()
                 } else {
-                    self.currentRetryCount = 0
+                    print("[WebSocketClient] Retrying failed")
+                    self.currentConnectionRetryCount = 0
                     self.onFailure?(error)
                 }
             }
         }
     }
-    
+
     func startPing() {
         pingTimer = Timer.scheduledTimer(withTimeInterval: pingInterval, repeats: true) { [weak self] _ in
             self?.sendPing()
         }
     }
-    
+
     func sendPing() {
         webSocketTask?.sendPing { [weak self] error in
             if let error {
                 print("[WebSocketClient] Ping error: \(error)")
-                self?.scheduleReconnect()
+                guard let self = self else { return }
+
+                // Track ping retry count and fallback to onFailure after threshold
+                self.currentPingRetryCount += 1
+                print("[WebSocketClient] Ping retry (\(self.currentPingRetryCount)/\(self.failurePingRetryCount))")
+
+                if self.currentPingRetryCount >= self.failurePingRetryCount {
+                    print("[WebSocketClient] Ping retries failed")
+                    self.currentPingRetryCount = 0
+                    self.onFailure?(error)
+                } else {
+                    self.scheduleReconnect()
+                }
             } else {
                 print("[WebSocketClient] Ping successful")
             }
         }
     }
-    
+
     func scheduleReconnect() {
         reconnectTimer?.invalidate()
         reconnectTimer = Timer.scheduledTimer(withTimeInterval: reconnectInterval, repeats: false) { [weak self] _ in
-            print("[WebSocketClient] Attempting reconnect #\(self?.currentRetryCount ?? 0)")
-            self?.startListening(onEvent: self?.onEvent ?? { _ in })
+            print("[WebSocketClient] Attempting reconnect #\(self?.currentConnectionRetryCount ?? 0)")
+            self?.startListening(onEvent: self?.onEvent ?? { _ in }, onFailure: self?.onFailure)
         }
     }
 }

@@ -5,8 +5,8 @@
 
 import class UIKit.UIViewController
 
-public final class QRCodeScannerAssembly {
-    public static func assemble(
+final class QRCodeScannerAssembly {
+    static func assemble(
         title: String,
         output: QRCodeScannerModuleOutput? = nil
     ) -> UIViewController {

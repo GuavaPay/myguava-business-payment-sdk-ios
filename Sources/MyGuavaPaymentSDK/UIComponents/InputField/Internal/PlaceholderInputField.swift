@@ -8,28 +8,28 @@
 import UIKit
 import SnapKit
 
-public final class PlaceholderInputField: UIView {
+final class PlaceholderInputField: UIView {
     private let textFieldContainer = UIView()
 
-    public let textField: DelegatingTextField = {
+    let textField: DelegatingTextField = {
         let textField = DelegatingTextField()
         textField.borderStyle = .none
         return textField
     }()
 
-    public lazy var helperLabel: UILabel = {
+    lazy var helperLabel: UILabel = {
         let label = UILabel()
         label.text = "Label"
         return label
     }()
 
-    public let placeholderLabel: UILabel = {
+    let placeholderLabel: UILabel = {
         let label = UILabel()
         label.text = "Placeholder"
         return label
     }()
 
-    public let leftAccessoryStackView: UIStackView = {
+    let leftAccessoryStackView: UIStackView = {
         let stack = UIStackView()
         stack.spacing = .spacing100
         stack.setContentHuggingPriority(.required, for: .horizontal)
@@ -51,7 +51,7 @@ public final class PlaceholderInputField: UIView {
     private var textFieldTrailing: Constraint?
     private var textFieldLeading: Constraint?
 
-    public var autocapitalizationType: UITextAutocapitalizationType {
+    var autocapitalizationType: UITextAutocapitalizationType {
         set {
             textField.autocapitalizationType = newValue
         }
@@ -60,7 +60,7 @@ public final class PlaceholderInputField: UIView {
         }
     }
 
-    public var autocorrectionType: UITextAutocorrectionType {
+    var autocorrectionType: UITextAutocorrectionType {
         set {
             textField.autocorrectionType = newValue
         }
@@ -69,7 +69,7 @@ public final class PlaceholderInputField: UIView {
         }
     }
 
-    public var keyboardType: UIKeyboardType {
+    var keyboardType: UIKeyboardType {
         set {
             textField.keyboardType = newValue
         }
@@ -78,7 +78,7 @@ public final class PlaceholderInputField: UIView {
         }
     }
 
-    public var keyboardAppearance: UIKeyboardAppearance {
+    var keyboardAppearance: UIKeyboardAppearance {
         set {
             textField.keyboardAppearance = newValue
         }
@@ -87,7 +87,7 @@ public final class PlaceholderInputField: UIView {
         }
     }
 
-    public var returnKeyType: UIReturnKeyType {
+    var returnKeyType: UIReturnKeyType {
         set {
             textField.returnKeyType = newValue
         }
@@ -96,7 +96,7 @@ public final class PlaceholderInputField: UIView {
         }
     }
 
-    public weak var textFieldDelegate: UITextFieldDelegate? {
+    weak var textFieldDelegate: UITextFieldDelegate? {
         didSet {
             textField.delegate = textFieldDelegate
         }
@@ -112,7 +112,7 @@ public final class PlaceholderInputField: UIView {
 
     private var internalPlaceholderText: String?
 
-    public init(
+    init(
         state: State = .enabled,
         style: Style = StockStyle(),
         autoMinimizesHelper: Bool = true,
@@ -176,12 +176,12 @@ public final class PlaceholderInputField: UIView {
         placeholderLabel.isHidden = true
     }
 
-    public func setPlaceholder(_ placeholder: String) {
+    func setPlaceholder(_ placeholder: String) {
         self.placeholderLabel.text = placeholder
         internalPlaceholderText = placeholder
     }
 
-    public func setHelper(_ helper: String) {
+    func setHelper(_ helper: String) {
         self.helperLabel.text = helper
         if usesHelperTextAsPlaceholder {
             placeholderLabel.text = helper
@@ -192,7 +192,7 @@ public final class PlaceholderInputField: UIView {
     /// - Parameters:
     ///   - text: text we want to be setted
     ///   - animated: update text animated or not
-    public func setText(_ text: String, animated: Bool = true) {
+    func setText(_ text: String, animated: Bool = true) {
         if !isFirstResponder {
             setMinimized(text.isEmpty, animated: animated)
         }
@@ -206,12 +206,12 @@ public final class PlaceholderInputField: UIView {
     /// - Parameters:
     ///   - text: attributed text we want to be setted
     ///   - animated: update text animated or not
-    public func setAttributedText(_ text: NSAttributedString, animated: Bool = true) {
+    func setAttributedText(_ text: NSAttributedString, animated: Bool = true) {
         setMinimized(false, animated: animated)
         textField.attributedText = text
     }
 
-    public func setState(state: State) {
+    func setState(state: State) {
         self.state = state
 
         textField.isUserInteractionEnabled = state != .disabled && !isReadOnly
@@ -225,38 +225,38 @@ public final class PlaceholderInputField: UIView {
     }
 
     @discardableResult
-    public override func becomeFirstResponder() -> Bool {
+    override func becomeFirstResponder() -> Bool {
         textField.becomeFirstResponder()
     }
 
     @discardableResult
-    public override func resignFirstResponder() -> Bool {
+    override func resignFirstResponder() -> Bool {
         textField.resignFirstResponder()
     }
 
-    public override var isFirstResponder: Bool {
+    override var isFirstResponder: Bool {
         textField.isFirstResponder
     }
 
-    public override var canBecomeFirstResponder: Bool {
+    override var canBecomeFirstResponder: Bool {
         textField.canBecomeFirstResponder
     }
 
-    public override var canResignFirstResponder: Bool {
+    override var canResignFirstResponder: Bool {
         textField.canResignFirstResponder
     }
 
     /// TV OS
-    public override var canBecomeFocused: Bool {
+    override var canBecomeFocused: Bool {
         textField.canBecomeFocused
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         updateView()
     }
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         return CGSize(width: UIView.noIntrinsicMetric, height: .spacing1000)
     }
 

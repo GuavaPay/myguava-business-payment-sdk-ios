@@ -7,7 +7,7 @@
 
 import UIKit
 
-public class SelectCountryCodeEmptyStateTableViewCell: UITableViewCell {
+class SelectCountryCodeEmptyStateTableViewCell: UITableViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .body2Regular

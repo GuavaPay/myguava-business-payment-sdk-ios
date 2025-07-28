@@ -8,15 +8,15 @@
 import UIKit
 import Combine
 
-public final class Button: UIView {
+final class Button: UIView {
 
-    public struct Config {
-        public let type: ButtonType
-        public let state: State
-        public let scheme: Scheme
-        public let size: Size
+    struct Config {
+        let type: ButtonType
+        let state: State
+        let scheme: Scheme
+        let size: Size
 
-        public init(type: ButtonType, state: State, scheme: Scheme, size: Size) {
+        init(type: ButtonType, state: State, scheme: Scheme, size: Size) {
             self.type = type
             self.state = state
             self.scheme = scheme
@@ -25,7 +25,7 @@ public final class Button: UIView {
     }
 
     /// Represents different button types.
-    public enum ButtonType {
+    enum ButtonType {
         /// A button with an image
         case image(UIImage)
         /// A button with text
@@ -82,7 +82,7 @@ public final class Button: UIView {
         }
     }
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         switch config.type {
         case .image:
             return CGSize(width: style.height, height: style.height)
@@ -95,14 +95,14 @@ public final class Button: UIView {
         }
     }
 
-    required public init(config: Config, frame: CGRect = .zero, _ action: (() -> Void)? = nil) {
+    required init(config: Config, frame: CGRect = .zero, _ action: (() -> Void)? = nil) {
         self.config = config
         self.state = config.state
         self.scheme = config.scheme
         self.action = action
         self.style = styleFactory.makeStyle(state: config.state,
                                             scheme: config.scheme,
-                                            size: config.size, 
+                                            size: config.size,
                                             type: config.type)
         super.init(frame: frame)
         setupView()
@@ -114,7 +114,7 @@ public final class Button: UIView {
     ///   - config: button config
     ///   - customColor: optional custom background color
     ///   - action: optional action
-    public init(
+    init(
         config: Config,
         customBackgroundColor: UIColor? = nil,
         customForegroundColor: UIColor? = nil,
@@ -139,36 +139,36 @@ public final class Button: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         updateView()
     }
 
-    public func setState(_ state: State) {
+    func setState(_ state: State) {
         self.state = state
     }
 
-    public func setText(_ text: String) {
+    func setText(_ text: String) {
         label.text = text
     }
 
-    public func setImage(_ image: UIImage) {
+    func setImage(_ image: UIImage) {
         imageView.image = image.withRenderingMode(.alwaysTemplate)
     }
 
-    public func setScheme(_ scheme: Scheme) {
+    func setScheme(_ scheme: Scheme) {
         self.scheme = scheme
     }
 
-    public func setStyleFactory(_ factory: StyleFactory) {
+    func setStyleFactory(_ factory: StyleFactory) {
         self.styleFactory = factory
         updateView()
     }
 
-    public func setAction(_ action: @escaping () -> Void) {
+    func setAction(_ action: @escaping () -> Void) {
         self.action = action
     }
 
-    public func setDisableStateAction(_ action: @escaping () -> Void) {
+    func setDisableStateAction(_ action: @escaping () -> Void) {
         disableStateAction = action
     }
 
@@ -231,7 +231,7 @@ public final class Button: UIView {
         updateView()
     }
 
-    public override func layoutSubviews() {
+    override func layoutSubviews() {
         super.layoutSubviews()
 
         switch style.cornerRadius {
@@ -289,12 +289,12 @@ public final class Button: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
     }
 }
@@ -302,22 +302,22 @@ public final class Button: UIView {
 // MARK: - Button + ShimmerableView
 
 extension Button: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [self]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [self: .automatic]
     }
 }
 
 extension Button {
-    public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard state != .disabled && state != .loading else { return }
         state = .pressed
     }
 
-    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if state == .disabled {
             disableStateAction?()
         }
@@ -327,12 +327,12 @@ extension Button {
         action?()
     }
 
-    public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard state != .disabled && state != .loading else { return }
         state = .enabled
     }
 
-    public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard state != .disabled && state != .loading else { return }
         state = .enabled
     }

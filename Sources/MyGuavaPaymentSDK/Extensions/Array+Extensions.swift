@@ -7,19 +7,19 @@ import UIKit
 
 extension Array where Element: UIView {
 
-    public func setTintColor(_ color: UIColor) {
+    func setTintColor(_ color: UIColor) {
         self.forEach { $0.tintColor = color }
     }
 
-    public func hide() {
+    func hide() {
         self.forEach { $0.isHidden = true }
     }
 
-    public func unHide() {
+    func unHide() {
         self.forEach { $0.isHidden = false }
     }
 
-    public func isHidden() -> Bool {
+    func isHidden() -> Bool {
         return allSatisfy { $0.isHidden }
     }
 }

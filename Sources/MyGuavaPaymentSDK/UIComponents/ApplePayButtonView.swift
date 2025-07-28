@@ -7,18 +7,46 @@
 
 import UIKit
 import SnapKit
+import PassKit
 
 final class ApplePayButtonView: UIView {
-    
+
     var onTap: (() -> Void)?
-    
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Pay with Apple Pay"
-        label.textColor = .white
-        label.font = UIFont.headlineSemibold
-        label.textAlignment = .center
-        return label
+
+    private let titleAttributedString: NSMutableAttributedString = {
+        let plainText = "Pay with "
+        let boldText = "Pay"
+        let attributedText = NSMutableAttributedString(
+            string: plainText,
+            attributes: [.font: UIFont.title3Regular, .foregroundColor: UIColor.systemBackground]
+        )
+        attributedText.append(
+            NSAttributedString(
+                string: boldText,
+                attributes: [.font: UIFont.title2Semibold, .foregroundColor: UIColor.systemBackground]
+            )
+        )
+        return attributedText
+    }()
+
+    private lazy var button: UIButton = {
+        let button: UIButton
+
+        if #available(iOS 14.0, *) {
+            let pkButton = PKPaymentButton(paymentButtonType: .inStore, paymentButtonStyle: .automatic)
+            pkButton.cornerRadius = UICustomization.Button.cornerRadius
+            button = pkButton
+        } else {
+            button = UIButton()
+            button.backgroundColor = .label
+            button.clipsToBounds = true
+            button.layer.cornerRadius = UICustomization.Button.cornerRadius
+            button.setAttributedTitle(titleAttributedString, for: .normal)
+        }
+
+        button.addTarget(self, action: #selector(handleTap), for: .touchUpInside)
+
+        return button
     }()
 
     private(set) var isLoading: Bool = false {
@@ -29,33 +57,12 @@ final class ApplePayButtonView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupView()
-        showShimmerIfNeeded()
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
+        configureView()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        setupView()
-    }
-
-    private func setupView() {
-        backgroundColor = .black
-        layer.cornerRadius = 8
-        clipsToBounds = true
-        isSkeletonable = true
-
-        addSubview(titleLabel)
-
-        self.snp.makeConstraints {
-            $0.height.equalTo(50)
-        }
-
-        titleLabel.snp.makeConstraints {
-            $0.leading.equalToSuperview().inset(16)
-            $0.trailing.equalToSuperview().inset(16)
-            $0.centerY.equalToSuperview()
-        }
+        configureView()
     }
 
     private func showShimmerIfNeeded() {
@@ -71,13 +78,29 @@ final class ApplePayButtonView: UIView {
         onTap?()
     }
 
+    private func configureView() {
+        self.snp.makeConstraints {
+            $0.height.equalTo(50)
+        }
+
+        addSubview(button)
+        button.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
+
+        isSkeletonable = true
+        showShimmerIfNeeded()
+    }
+
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
+        button.isHidden = true
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
+        button.isHidden = false
         isLoading = false
     }
 }
@@ -85,11 +108,11 @@ final class ApplePayButtonView: UIView {
 // MARK: - ApplePayButtonView + ShimmerableView
 
 extension ApplePayButtonView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [self]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
-        [self: .automatic]
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+        [self: .value(Int(UICustomization.Button.cornerRadius))]
     }
 }

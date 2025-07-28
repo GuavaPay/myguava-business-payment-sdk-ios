@@ -24,7 +24,7 @@ protocol PastingTextFieldDelegate: AnyObject {
 }
 
 /// Text field that notify its delegate on some event that are not covered by UITextFieldDelegate
-final public class DelegatingTextField: UITextField {
+final class DelegatingTextField: UITextField {
     /// Delegate that will be notified on tap of backspace key
     weak var deleteDelegate: DeletionTextFieldDelegate?
 
@@ -40,12 +40,12 @@ final public class DelegatingTextField: UITextField {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override public func deleteBackward() {
+    override func deleteBackward() {
         super.deleteBackward()
         deleteDelegate?.didPressDelete(on: self)
     }
 
-    override public func paste(_ sender: Any?) {
+    override func paste(_ sender: Any?) {
         super.paste(sender)
         if let pastedString = UIPasteboard.general.string {
             pastingDelegate?.didPaste(pastedString, on: self)

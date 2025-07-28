@@ -3,6 +3,16 @@
     {
       "filename" : "visa.svg",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "visa_dark.svg",
+      "idiom" : "universal"
     }
   ],
   "info" : {

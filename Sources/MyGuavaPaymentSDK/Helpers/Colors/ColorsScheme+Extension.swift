@@ -26,6 +26,7 @@ extension UIColor {
 
 public struct BackgroundColorScheme: BackgroundColorProtocol {
     public static var primary: UIColor { UIColor(light: .gray100, dark: .gray100) }
+    public static var primaryStatic: UIColor { UIColor(light: .gray100Static, dark: .gray100Static) }
     public static var secondary: UIColor { UIColor(light: .gray200, dark: .gray200) }
     public static var tertiary: UIColor { UIColor(light: .gray300, dark: .gray300) }
     public static var inverse: UIColor { UIColor(light: .gray1000, dark: .gray1000) }
@@ -70,7 +71,7 @@ public struct ButtonColorScheme: ButtonColorProtocol {
     public static var primaryBackgroundHover: UIColor { UIColor(light: .brand700, dark: .brand700) }
     public static var primaryBackgroundPressed: UIColor { UIColor(light: .brand800, dark: .brand800) }
     public static var primaryBackgroundDisabled: UIColor { UIColor(light: .gray400, dark: .gray400) }
-    public static var primaryForegroundRest: UIColor { UIColor(light: .gray1000, dark: .gray1000) }
+    public static var primaryForegroundRest: UIColor { UIColor(light: .gray1000Static, dark: .gray1000Static) }
     public static var primaryForegroundDisabled: UIColor { UIColor(light: .gray600, dark: .gray600) }
     public static var secondaryBorder: UIColor { UIColor(light: .gray1000, dark: .gray1000) }
     public static var secondaryBackgroundHover: UIColor { UIColor(light: .gray200, dark: .gray200) }

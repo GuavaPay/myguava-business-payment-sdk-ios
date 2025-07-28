@@ -92,6 +92,10 @@ extension UIColor: ColorProvider {
         UIColor(resource: ColorResource.Colors.Gray._100)
     }
 
+    public static var gray100Static: UIColor {
+        UIColor(resource: ColorResource.Colors.Gray._100Static)
+    }
+
     public static var gray200: UIColor {
         UIColor(resource: ColorResource.Colors.Gray._200)
     }
@@ -126,6 +130,10 @@ extension UIColor: ColorProvider {
 
     public static var gray1000: UIColor {
         UIColor(resource: ColorResource.Colors.Gray._1000)
+    }
+
+    public static var gray1000Static: UIColor {
+        UIColor(resource: ColorResource.Colors.Gray._1000Static)
     }
 
     public static var red100: UIColor {

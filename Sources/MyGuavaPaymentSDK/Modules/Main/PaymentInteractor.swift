@@ -11,12 +11,8 @@ import Guavapay3DS2
 import SwiftGuavapay3DS2
 
 final class PaymentInteractor: PaymentInteractorInput {
-    
-    weak var output: PaymentInteractorOutput?
 
-    var availableCardSchemes: [CardScheme] {
-        payment?.availableCardSchemes ?? []
-    }
+    weak var output: PaymentInteractorOutput?
 
     private let config: PaymentConfig
     private let applePayManager: ApplePayManager
@@ -101,6 +97,10 @@ final class PaymentInteractor: PaymentInteractorInput {
     }
 
     func getOrder(shouldRetry: Bool = true) {
+        if config.disableCardholderNameInput {
+            output?.hideCardholderInput()
+        }
+
         orderService.getOrder(byId: config.orderId) { [weak self] result in
             guard let self else { return }
 
@@ -164,12 +164,14 @@ final class PaymentInteractor: PaymentInteractorInput {
         }
     }
 
-    func preCreatePayment(cardInfo: CardInfo, contactInfo: ContactInfo?) {
+    func preCreatePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool) {
         orderService.preCreatePayment(
             orderId: config.orderId,
             body: getBody(
                 cardInfo: cardInfo,
-                contactInfo: contactInfo
+                bindingInfo: bindingInfo,
+                contactInfo: contactInfo,
+                saveCard: false
             )
         ) { [weak self] result in
             switch result {
@@ -184,7 +186,7 @@ final class PaymentInteractor: PaymentInteractorInput {
                 default:
                     print("default")
                 }
-                self?.executePayment(cardInfo: cardInfo, contactInfo: contactInfo)
+                self?.executePayment(cardInfo: cardInfo, bindingInfo: bindingInfo, contactInfo: contactInfo, saveCard: saveCard)
             case .failure(let failure):
                 self?.output?.didNotPreCreateOrder(failure)
             }
@@ -218,6 +220,18 @@ final class PaymentInteractor: PaymentInteractorInput {
             }
         }
     }
+
+    func renameCard(bindingId: String, name: String, completion: @escaping () -> Void) {
+        bindingService.renameBinding(bindingId: bindingId, name: name) { _ in
+            completion()
+        }
+    }
+
+    func deleteCard(bindingId: String, completion: @escaping () -> Void) {
+        bindingService.deleteBinding(bindingId: bindingId) { _ in
+            completion()
+        }
+    }
 }
 
 // MARK: - Private + PaymentInteractor
@@ -241,22 +255,22 @@ private extension PaymentInteractor {
         completion: @escaping ([CardScheme], [Binding]) -> Void
     ) {
         let group = DispatchGroup()
-        
+
         var appleCardSchemes: [CardScheme] = []
         var bindings: [Binding] = []
-        
+
         group.enter()
         fetchSaveCardsIfNeeded(getOrder: getOrder) {
             bindings = $0
             group.leave()
         }
-        
+
         group.enter()
         fetchApplePayContextIfNeeded(getOrder: getOrder) {
             appleCardSchemes = $0
             group.leave()
         }
-        
+
         group.notify(queue: .main) {
             completion(appleCardSchemes, bindings)
         }
@@ -274,7 +288,10 @@ private extension PaymentInteractor {
             config.availablePaymentMethods.compactMap { $0.orderMethod }
         ])
 
-        guard availableMethods.contains(.paymentCardBinding) else {
+        let isBindingAvailable = availableMethods.contains(.paymentCardBinding)
+        output?.setIsBindingAvailable(isBindingAvailable)
+
+        guard isBindingAvailable else {
             completion([])
             return
         }
@@ -311,7 +328,7 @@ private extension PaymentInteractor {
         return x5c
     }
 
-    func executePayment(cardInfo: CardInfo, contactInfo: ContactInfo?) {
+    func executePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool) {
         var packedSdkDataString: String?
         if let directoryServerID {
             let transaction = threeDS2Service.createTransaction(
@@ -336,7 +353,9 @@ private extension PaymentInteractor {
             orderId: config.orderId,
             body: getBody(
                 cardInfo: cardInfo,
+                bindingInfo: bindingInfo,
                 contactInfo: contactInfo,
+                saveCard: saveCard,
                 packedSdkDataString: packedSdkDataString
             )
         ) { [weak self] result in
@@ -396,19 +415,40 @@ private extension PaymentInteractor {
     }
 
     func getBody(
-        cardInfo: CardInfo,
+        cardInfo: CardInfo?,
+        bindingInfo: BindingInfo?,
         contactInfo: ContactInfo?,
+        saveCard: Bool,
         packedSdkDataString: String? = nil
     ) -> [String: Any] {
-        let paymentMethod: [String: Any] = [
-            "type": "PAYMENT_CARD",
-            "pan": cardInfo.number,
-            "cvv2": cardInfo.cvv,
-            "expiryDate": "\(cardInfo.expiryYear)\(cardInfo.expiryMonth)",
-            "cardholderName": "CARDHOLDER NAME"
-        ]
+        var body = [String: Any]()
 
-        var body: [String: Any] = ["paymentMethod": paymentMethod]
+        if let cardInfo {
+            let paymentMethod: [String: Any] = [
+                "type": "PAYMENT_CARD",
+                "pan": cardInfo.number,
+                "cvv2": cardInfo.cvv,
+                "expiryDate": "\(cardInfo.expiryYear)\(cardInfo.expiryMonth)",
+                "cardholderName": cardInfo.holderName
+            ]
+
+            body["paymentMethod"] = paymentMethod
+
+            if saveCard {
+                body["bindingCreationIsNeeded"] = saveCard
+                body["bindingName"] = cardInfo.newCardName
+            }
+        }
+
+        if let bindingInfo {
+            let paymentMethod: [String: Any] = [
+                "type": "PAYMENT_CARD_BINDING",
+                "bindingId": bindingInfo.bindingId,
+                "cvv2": bindingInfo.cvv2
+            ]
+
+            body["paymentMethod"] = paymentMethod
+        }
 
         let contactPhone = ContactPhone(
             countryCode: contactInfo?.countryCode.map { $0.replacingOccurrences(of: "+", with: "") },
@@ -445,8 +485,14 @@ private extension PaymentInteractor {
     }
 
     func startPollingOrderStatus() {
-        orderListener.startListening { [weak self] event in
+        orderListener.startListening { [weak self] result in
             guard let self else { return }
+
+            guard case let .success(event) = result else {
+                self.fallbackToStatusPolling()
+                return
+            }
+
             switch event.order.status {
             case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
                 self.output?.stopLoading()
@@ -489,6 +535,38 @@ private extension PaymentInteractor {
             }
         }
     }
+
+    // Fallback to polling getOrder endpoint on WebSocket connection error
+    func fallbackToStatusPolling() {
+        orderListener.stopListening()
+        pollOrderStatusUntilPaid(delay: 2.0, repeatCount: 5) { [weak self] pollResult in
+            guard let self = self else { return }
+            switch pollResult {
+            case .success(let response):
+                if let order = response.order, let status = order.status {
+                    self.output?.stopLoading()
+                    self.output?.didExecutePayment(.success(.init(
+                        order: .init(
+                            id: order.id,
+                            status: status,
+                            referenceNumber: order.referenceNumber,
+                            amount: ResultDataModel.Amount(from: order.totalAmount)
+                        ),
+                        payment: .init(
+                            id: response.payment?.id,
+                            date: response.payment?.date,
+                            rrn: response.payment?.rrn,
+                            authCode: response.payment?.authCode,
+                            resultMessage: response.payment?.result?.message
+                        )
+                    )))
+                }
+            case .failure(let error):
+                self.output?.stopLoading()
+                self.output?.didExecutePayment(.error(.unknown(error)))
+            }
+        }
+    }
 }
 
 // MARK: - Private + ApplePay (Should be move to ApplePay worker later)
@@ -508,7 +586,7 @@ private extension PaymentInteractor {
             sdkAvailableCardMethods,
             config.availablePaymentMethods.compactMap { $0.orderMethod }
         ])
-        
+
         guard availableMethods.contains(.applePay) else {
             completion([])
             return
@@ -532,14 +610,24 @@ private extension PaymentInteractor {
                 config.availableCardSchemes.compactMap { $0.cardScheme }
             ])
             let merchantCapabilities = self.getMerchantCapabilities(order.availableCardProductCategories)
-
+            let displayName = response.model?.context.displayName ?? ""
+            let merchantName = getOrder.merchant?.name ?? ""
+            
+            let label = if !displayName.isEmpty {
+                displayName
+            } else if !merchantName.isEmpty {
+                merchantName
+            } else {
+                ""
+            }
+            
             self.applePayManager.config = ApplePayConfig(
                 merchantIdentifier: merchantId,
                 countryCode: countryCode,
                 currencyCode: order.totalAmount.currency,
                 paymentSummaryItems: [
                     .init(
-                        label: "Amount",
+                        label: label,
                         amount: NSDecimalNumber(decimal: Decimal(order.totalAmount.baseUnits)),
                         type: .final
                     )
@@ -599,8 +687,14 @@ extension PaymentInteractor: ApplePayManagerDelegate {
         switch result {
         case .success:
             output?.showLoading()
-            orderListener.startListening { [weak self] event in
+            orderListener.startListening { [weak self] result in
                 guard let self else { return }
+
+                guard case let .success(event) = result else {
+                    self.fallbackToStatusPolling()
+                    return
+                }
+
                 switch event.order.status {
                 case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
                     self.output?.stopLoading()

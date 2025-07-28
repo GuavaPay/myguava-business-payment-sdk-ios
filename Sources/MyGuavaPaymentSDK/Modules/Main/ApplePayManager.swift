@@ -172,7 +172,7 @@ extension ApplePayManager {
         let supportedNetworks: [PKPaymentNetwork]
         let merchantCapabilities: [PKMerchantCapability]
 
-        public init(
+        init(
             merchantIdentifier: String,
             countryCode: String,
             currencyCode: String,

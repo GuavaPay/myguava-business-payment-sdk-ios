@@ -21,8 +21,8 @@ protocol RadioButtonStyleProtocol {
 }
 
 struct RadioButtonStyle: RadioButtonStyleProtocol {
-    var backgroundCheckedColor: UIColor { .controls.selectedBackgroundRest }
-    var borderCheckedColor: UIColor { .controls.selectedBackgroundRest }
+    var backgroundCheckedColor: UIColor { UICustomization.SelectItem.accentColor }
+    var borderCheckedColor: UIColor { UICustomization.SelectItem.accentColor }
     var backgroundUncheckedColor: UIColor { .clear }
     var borderUnCheckedColor: UIColor { .controls.borderRest }
     var backgroundDisabledColor: UIColor { .controls.backgroundDisabled }

@@ -34,6 +34,8 @@ final class PaymentPresenter: PaymentViewOutput {
 
     private var cardNameForEdit: String?
 
+    private var shouldUseSavedCard: Bool = true
+
     private var saveCards: [SavedCardsView.Section: [[SavedCardsCellKind]]] = [:] {
         didSet {
             view?.configureSaveCards(saveCards)
@@ -83,6 +85,10 @@ final class PaymentPresenter: PaymentViewOutput {
             paymentViewModel?.cardInfoViewModel.expiryMonth = month
         case let .securityCode(code):
             paymentViewModel?.cardInfoViewModel.cvv = String(code)
+        case let .cardName(text):
+            paymentViewModel?.cardInfoViewModel.cardName = text
+        case let .cardHolderName(text):
+            paymentViewModel?.cardInfoViewModel.cardholderName = text
         }
         validateCardInfo()
     }
@@ -92,10 +98,25 @@ final class PaymentPresenter: PaymentViewOutput {
     }
 
     func didTapEditCardButton(indexPath: IndexPath) {
+        let binding: Binding? = switch indexPath.section {
+        case 0:
+            paymentViewModel?.validSaveCards[safe: indexPath.row]
+        case 1:
+            paymentViewModel?.invalidSaveCards[safe: indexPath.row]
+        default:
+            nil
+        }
+
         router.showEditCardNamePopup { [weak self] in
-            print(self?.cardNameForEdit ?? "")
-        } cancelAction: {
-            print("cancelEditAction")
+            guard let bindingId = binding?.id, let cardName = self?.cardNameForEdit else { return }
+
+            self?.interactor.renameCard(bindingId: bindingId, name: cardName) { [weak self] in
+                self?.view?.showLoading(true)
+                self?.interactor.getOrder(shouldRetry: true)
+            }
+
+        } cancelAction: { [weak self] in
+            self?.cardNameForEdit = nil
         } editCardName: { [weak self] newName in
             self?.cardNameForEdit = newName
         }
@@ -103,11 +124,27 @@ final class PaymentPresenter: PaymentViewOutput {
     }
 
     func didTapDeleteCardButton(indexPath: IndexPath) {
-        router.showPopup {
-            print("deleteAction")
-        } cancelAction: {
-            print("cancelAction")
+        let binding: Binding? = switch indexPath.section {
+        case 0:
+            paymentViewModel?.validSaveCards[safe: indexPath.row]
+        case 1:
+            paymentViewModel?.invalidSaveCards[safe: indexPath.row]
+        default:
+            nil
         }
+
+        let cardName = binding?.name
+        let cardNumber = String(binding?.cardData?.maskedPan?.suffix(5) ?? "")
+        let cardNameWithNumber = "\(cardName ?? "") \(cardNumber)"
+
+        router.showPopup(cardName: cardNameWithNumber) { [weak self] in
+            guard let bindingId = binding?.id else { return }
+
+            self?.interactor.deleteCard(bindingId: bindingId) { [weak self] in
+                self?.view?.showLoading(true)
+                self?.interactor.getOrder(shouldRetry: true)
+            }
+        } cancelAction: {}
     }
 
     func didTapConfirmButton() {
@@ -121,7 +158,14 @@ final class PaymentPresenter: PaymentViewOutput {
             number: viewModel.number,
             expiryMonth: viewModel.expiryMonth,
             expiryYear: viewModel.expiryYear,
-            cvv: Int(viewModel.cvv) ?? 0
+            cvv: Int(viewModel.cvv) ?? 0,
+            newCardName: viewModel.cardName,
+            cardholderName: viewModel.cardholderName
+        )
+
+        let bindingInfo = BindingInfo(
+            bindingId: paymentViewModel?.bindingInfoViewModel.bindingId,
+            cvv2: paymentViewModel?.bindingInfoViewModel.cvv2
         )
 
         let hasContactInfo = contactViewModel?.hasContactInfo ?? false
@@ -132,8 +176,10 @@ final class PaymentPresenter: PaymentViewOutput {
         ) : nil
 
         interactor.preCreatePayment(
-            cardInfo: cardInfo,
-            contactInfo: contactInfo
+            cardInfo: shouldUseSavedCard ? nil : cardInfo,
+            bindingInfo: shouldUseSavedCard ? bindingInfo : nil,
+            contactInfo: contactInfo,
+            saveCard: paymentViewModel?.needSaveNewCard ?? false
         )
     }
 
@@ -143,6 +189,33 @@ final class PaymentPresenter: PaymentViewOutput {
 
     func didTapScanCard() {
         router.showCardScanner(output: self)
+    }
+
+    func didTapSaveNewCard(_ needSaveNewCard: Bool) {
+        paymentViewModel?.needSaveNewCard = needSaveNewCard
+    }
+
+    func didChangeNewCardName(_ name: String) {
+        paymentViewModel?.cardInfoViewModel.cardName = name
+    }
+
+    func didSelectSavedCards(_ showSaveCards: Bool) {
+        shouldUseSavedCard = showSaveCards
+    }
+
+    func didChangeSavedCardCVV(_ indexPath: IndexPath, code: String) {
+        view?.configureConfirmButton(with: .disabled)
+
+        guard let binding = paymentViewModel?.validSaveCards[safe: indexPath.row],
+              let bindingId = binding.id,
+              let cvv = Int(code) else {
+            return
+        }
+
+        paymentViewModel?.bindingInfoViewModel.bindingId = bindingId
+        paymentViewModel?.bindingInfoViewModel.cvv2 = cvv
+
+        validateBindingInfo()
     }
 
     func didTapContactInformationSaveButton(phoneNumber: String, email: String) {
@@ -163,6 +236,10 @@ final class PaymentPresenter: PaymentViewOutput {
 
 extension PaymentPresenter: PaymentInteractorOutput {
 
+    func hideCardholderInput() {
+        view?.hideCardholderInput()
+    }
+    
     func showLoading() {
         view?.showLoading(true)
     }
@@ -170,7 +247,11 @@ extension PaymentPresenter: PaymentInteractorOutput {
     func stopLoading() {
         view?.showLoading(false)
     }
-    
+
+    func setIsBindingAvailable(_ isBindingAvailable: Bool) {
+        view?.setIsBindingAvailable(isBindingAvailable)
+    }
+
     func didGetOrder(_ payment: PaymentDTO) {
         let viewModel = PaymentViewModel(payment: payment)
 
@@ -209,16 +290,7 @@ extension PaymentPresenter: PaymentInteractorOutput {
         view?.configureConfirmButton(with: .enabled)
         view?.closeView()
 
-        switch status {
-        case .success(let data):
-            moduleOutput?.handlePaymentResult(.success(data))
-        case .unsuccess(let data):
-            moduleOutput?.handlePaymentResult(.unsuccess(data))
-        case .error(let error):
-            moduleOutput?.handlePaymentResult(.error(error))
-        case .cancel:
-            moduleOutput?.handlePaymentResult(.cancel)
-        }
+        moduleOutput?.handlePaymentResult(status)
     }
 
     func didResolveCardNumber(_ model: ResolveCard?) {
@@ -227,7 +299,7 @@ extension PaymentPresenter: PaymentInteractorOutput {
             return
         }
 
-        guard interactor.availableCardSchemes.contains(model.cardScheme) else {
+        guard paymentViewModel?.availableCardSchemes.contains(model.cardScheme) == true else {
             view?.showCardNumberState(.error(text: "This card not supported"))
             return
         }
@@ -314,8 +386,6 @@ private extension PaymentPresenter {
 
         let validCards: [SavedCardsCellKind] = viewModel.validSaveCards.compactMap { .card($0) }
         let invalidCards: [SavedCardsCellKind] = viewModel.invalidSaveCards.compactMap { .card($0) }
-        
-        savedCards[.newCard] = [[.addNewCard]]
 
         switch (validCards.isEmpty, invalidCards.isEmpty) {
         case (false, false):
@@ -331,6 +401,7 @@ private extension PaymentPresenter {
             view?.selectSegmentControl(index: 1)
 
         case (true, true):
+            shouldUseSavedCard = false
             view?.disableSaveCards()
             return
         }
@@ -341,7 +412,6 @@ private extension PaymentPresenter {
     func validateCardInfo() {
         /// Start with local validation
         guard let cardNumber = paymentViewModel?.cardInfoViewModel.number, !cardNumber.isEmpty else {
-            
             return
         }
 
@@ -358,5 +428,17 @@ private extension PaymentPresenter {
 
         /// Then validate by resolved `CardScheme` (if there is any)
         interactor.resolveCardNumber(cardNumber)
+    }
+
+    func validateBindingInfo() {
+        guard let bindingInfoViewModel = paymentViewModel?.bindingInfoViewModel else {
+            view?.configureConfirmButton(with: .disabled)
+            return
+        }
+
+        let bindingIdIsValid = !bindingInfoViewModel.bindingId.isEmpty
+        let cvvIsValid = String(bindingInfoViewModel.cvv2).count >= 3
+
+        view?.configureConfirmButton(with: bindingIdIsValid && cvvIsValid ? .enabled : .disabled)
     }
 }

@@ -36,11 +36,11 @@ public struct GPUICustomization {
     ///   - input: Input field appearance customization settings.
     ///   - selectItem: Selection item appearance customization settings.
     public init(
-        common: GPCommonCustomization,
-        button: GPButtonCustomization,
-        label: GPLabelCustomization,
-        input: GPInputCustomization,
-        selectItem: GPSelectItemCustomization
+        common: GPCommonCustomization = .default,
+        button: GPButtonCustomization = .default,
+        label: GPLabelCustomization = .default,
+        input: GPInputCustomization = .default,
+        selectItem: GPSelectItemCustomization = .default
     ) {
         self.common = common
         self.button = button
@@ -91,6 +91,8 @@ public struct GPButtonCustomization {
     public var cornerRadius: CGFloat
     /// Button text color.
     public var textColor: UIColor
+    /// Button secondary text color.
+    public var secondaryTextColor: UIColor
     /// Button border color.
     public var borderColor: UIColor
     /// Button border width.
@@ -108,7 +110,8 @@ public struct GPButtonCustomization {
         backgroundPrimary: UIColor = .button.primaryBackgroundRest,
         backgroundSecondary: UIColor = .gray200,
         cornerRadius: CGFloat = .radius200,
-        textColor: UIColor = .foreground.onAccent,
+        textColor: UIColor = .button.primaryForegroundRest,
+        secondaryTextColor: UIColor = .button.secondaryForegroundRest,
         borderColor: UIColor = .clear,
         borderWidth: CGFloat = 0.0
     ) {
@@ -116,6 +119,7 @@ public struct GPButtonCustomization {
         self.backgroundSecondary = backgroundSecondary
         self.cornerRadius = cornerRadius
         self.textColor = textColor
+        self.secondaryTextColor = secondaryTextColor
         self.borderColor = borderColor
         self.borderWidth = borderWidth
     }
@@ -174,7 +178,7 @@ public struct GPInputCustomization {
         backgroundColor: UIColor = .gray200,
         cornerRadius: CGFloat = .radius200,
         textColor: UIColor = .input.primaryForeground,
-        placeholderTextColor: UIColor = .foreground.secondary,
+        placeholderTextColor: UIColor = .input.secondaryForeground,
         borderColor: UIColor = .input.borderRest,
         borderWidth: CGFloat = 1.0
     ) {

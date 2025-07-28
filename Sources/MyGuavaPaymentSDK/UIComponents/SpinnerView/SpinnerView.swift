@@ -7,7 +7,7 @@
 
 import UIKit
 
-public final class SpinnerView: UIView {
+final class SpinnerView: UIView {
 
     private var style: Style {
         Self.StockStyle.getStyle()
@@ -30,7 +30,7 @@ public final class SpinnerView: UIView {
     /// - Parameters:
     ///   - size: choose spinner size
     ///   - willBeShownOnOverlay: boolean, that needed if we show spinner on the overlay. Set it to true, if u need add it to overlay. It will take correct colors for spinner.
-    public init(size: Size, willBeShownOnOverlay: Bool = false) {
+    init(size: Size, willBeShownOnOverlay: Bool = false) {
         self.size = size
         self.willBeShownOnOverlay = willBeShownOnOverlay
         super.init(frame: CGRect(origin: .zero,
@@ -80,13 +80,13 @@ public final class SpinnerView: UIView {
         arcLayer.fillColor = style.borderFillColor.cgColor
     }
 
-    // MARK: - Public methods
+    // MARK: - methods
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         applyStyle(strokeColor)
     }
 
-    public func startAnimating() {
+    func startAnimating() {
         if arcLayer.animation(forKey: animationKey) == nil {
             let rotationAnimation = CABasicAnimation(keyPath: "transform.rotation")
             rotationAnimation.fromValue = 0
@@ -113,7 +113,7 @@ public final class SpinnerView: UIView {
         arcLayer.shadowPath = arcPath.cgPath
     }
 
-    public func setSize(_ size: Size) {
+    func setSize(_ size: Size) {
         self.size = size
         self.invalidateIntrinsicContentSize()
         UIView.animate(withDuration: 0.3, animations: {
@@ -123,19 +123,19 @@ public final class SpinnerView: UIView {
         }
     }
 
-    public func setColor(_ color: UIColor) {
+    func setColor(_ color: UIColor) {
         strokeColor = color
     }
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         return CGSize(width: size.rawValue, height: size.rawValue)
     }
 
-    public func stopAnimating() {
+    func stopAnimating() {
         arcLayer.removeAnimation(forKey: animationKey)
     }
 
-    public override func layoutSubviews() {
+    override func layoutSubviews() {
         super.layoutSubviews()
         updateArcPath()
     }

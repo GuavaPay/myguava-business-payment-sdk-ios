@@ -10,17 +10,19 @@ import SnapKit
 
 final class CardNameFieldView: UIView {
 
+    var onTextChanged: ((String) -> Void)?
+
     private let inputField: UITextField = {
         let textField = UITextField()
         textField.addKeyboardDoneToToolbar()
         textField.placeholder = "Name your card"
         textField.font = .body1Regular
-        textField.textColor = .label
-        textField.backgroundColor = .gray200
-        textField.layer.cornerRadius = 10
+        textField.textColor = UICustomization.Input.textColor
+        textField.backgroundColor = UICustomization.Input.backgroundColor
+        textField.layer.cornerRadius = UICustomization.Input.cornerRadius
         textField.layer.masksToBounds = false
-        textField.layer.borderWidth = 1
-        textField.layer.borderColor = UIColor.input.borderRest.cgColor
+        textField.layer.borderWidth = UICustomization.Input.borderWidth
+        textField.layer.borderColor = UICustomization.Input.borderColor.cgColor
         textField.setLeftPadding(10)
         textField.autocorrectionType = .no
         textField.isSkeletonable = true
@@ -52,6 +54,7 @@ final class CardNameFieldView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupLayout()
+        inputField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         showShimmerIfNeeded()
     }
 
@@ -90,24 +93,29 @@ final class CardNameFieldView: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
+    }
+
+    @objc
+    private func textFieldDidChange(_ textField: UITextField) {
+        onTextChanged?(textField.text ?? "")
     }
 }
 
 // MARK: - CardNameFieldView + ShimmerableView
 
 extension CardNameFieldView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [titleLabel, inputField]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [titleLabel: .automatic]
     }
 }

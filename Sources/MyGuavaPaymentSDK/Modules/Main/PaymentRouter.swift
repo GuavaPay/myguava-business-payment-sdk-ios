@@ -40,7 +40,7 @@ extension PaymentRouter: PaymentRouterInput {
         rootController?.presentController(viewController)
     }
 
-    func showPopup(deleteAction: (() -> Void)?, cancelAction: (() -> Void)?) {
+    func showPopup(cardName: String, deleteAction: (() -> Void)?, cancelAction: (() -> Void)?) {
         let deleteButton = Button(
             config: Button.Config(
                 type: .text("Delete"),
@@ -59,7 +59,7 @@ extension PaymentRouter: PaymentRouterInput {
         )
         let config = PopupConfig(
             title: "Are you sure you want to delete the card?",
-            message: "Are you sure you want to delete {Card name *4178}? This action cannot be undone.",
+            message: "Are you sure you want to delete \(cardName)? This action cannot be undone.",
             buttons: [
                 deleteButton,
                 cancelButton
@@ -103,7 +103,6 @@ extension PaymentRouter: PaymentRouterInput {
         )
         let config = PopupConfig(
             title: "Rename card",
-            message: "Closing now will cancel your payment and discard entered data. Proceed?",
             buttons: [
                 saveButton,
                 cancelButton

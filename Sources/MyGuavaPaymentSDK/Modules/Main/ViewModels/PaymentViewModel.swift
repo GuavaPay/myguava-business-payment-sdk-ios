@@ -13,7 +13,9 @@ final class PaymentViewModel {
     
     var contactInfoViewModel: ContactInfoViewModel = .init()
     var cardInfoViewModel: CardInfoViewModel = .init()
-    
+    var bindingInfoViewModel: BindingInfoViewModel = .init()
+    var needSaveNewCard: Bool = false
+
     var isCardPaymentAvailable: Bool {
         payment.availablePaymentMethods.contains { $0 == .paymentCard } &&
         payment.availableCardSchemes.isNotEmpty &&

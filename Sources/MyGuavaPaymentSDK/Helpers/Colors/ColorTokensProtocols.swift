@@ -9,6 +9,7 @@ import UIKit
 
 public protocol BackgroundColorProtocol {
     static var primary: UIColor { get }
+    static var primaryStatic: UIColor { get }
     static var secondary: UIColor { get }
     static var tertiary: UIColor { get }
     static var inverse: UIColor { get }

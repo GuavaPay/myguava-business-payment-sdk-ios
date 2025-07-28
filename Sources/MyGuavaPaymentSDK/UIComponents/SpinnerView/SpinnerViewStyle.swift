@@ -7,7 +7,7 @@
 
 import UIKit
 
-public extension SpinnerView {
+extension SpinnerView {
 
     protocol Style {
         var borderStrokeColor: UIColor { get set }
@@ -19,22 +19,22 @@ public extension SpinnerView {
     }
 
     struct StockStyle: Style {
-        public var borderStrokeColor: UIColor
-        public var borderFillColor: UIColor
+        var borderStrokeColor: UIColor
+        var borderFillColor: UIColor
 
-        public func borderStrokeColor(_ value: UIColor) -> Self {
+        func borderStrokeColor(_ value: UIColor) -> Self {
             var copy = self
             copy.borderStrokeColor = value
             return copy
         }
 
-        public func borderFillColor(_ value: UIColor) -> Self {
+        func borderFillColor(_ value: UIColor) -> Self {
             var copy = self
             copy.borderFillColor = value
             return copy
         }
 
-        public init(
+        init(
             borderStrokeColor: UIColor = .foreground.onAccent,
             borderFillColor: UIColor = .clear
         ) {
@@ -46,7 +46,7 @@ public extension SpinnerView {
 
 extension SpinnerView.Style {
 
-    public static func getStyle() -> SpinnerView.Style {
+    static func getStyle() -> SpinnerView.Style {
         SpinnerView.StockStyle()
     }
 }

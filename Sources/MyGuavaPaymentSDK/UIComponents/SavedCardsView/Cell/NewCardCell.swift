@@ -11,7 +11,7 @@ final class NewCardCell: UITableViewCell {
 
     var onChangeDigits: ((String) -> Void)?
     var onFieldEndEditing: ((CardInformationView.Field) -> Void)?
-    var onSaveCardTapped: (() -> Void)?
+    var onSaveCardTapped: ((Bool) -> Void)?
     var onScanButtonTapped: (() -> Void)?
 
     private let cardInformationView = CardInformationView()
@@ -27,7 +27,7 @@ final class NewCardCell: UITableViewCell {
     }
 
     private func setupUI() {
-        backgroundColor = .background.primary
+        backgroundColor = .clear
         selectionStyle = .none
 
         contentView.addSubview(cardInformationView)
@@ -38,8 +38,8 @@ final class NewCardCell: UITableViewCell {
     }
     
     private func bindActions() {
-        cardInformationView.onSaveCardTapped = { [weak self] in
-            self?.onSaveCardTapped?()
+        cardInformationView.onSaveCardTapped = { [weak self] needSaveNewCard in
+            self?.onSaveCardTapped?(needSaveNewCard)
         }
         
         cardInformationView.cardNumberView.onChangeDigits = { [weak self] digits in

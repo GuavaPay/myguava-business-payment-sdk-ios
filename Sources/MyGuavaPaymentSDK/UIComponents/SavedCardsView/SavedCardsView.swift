@@ -14,7 +14,7 @@ final class SavedCardsView: UIView {
     var onChangeSegmentControl: ((Int) -> Void)?
     var onEditButtonTapped: ((IndexPath) -> Void)?
     var onDeleteButtonTapped: ((IndexPath) -> Void)?
-    var onChangeDigits: ((String) -> Void)?
+    var onCVVCodeEndEditing: ((IndexPath, String) -> Void)?
     var onFieldEndEditing: ((CardInformationView.Field) -> Void)?
 
     enum Section: Int {
@@ -118,7 +118,7 @@ final class SavedCardsView: UIView {
         tableView.dataSource = self
         tableView.delegate = self
 
-        backgroundColor = .background.primary
+        backgroundColor = .clear
         segmentedControl.selectedSegmentIndex = 0
     }
 
@@ -142,7 +142,7 @@ final class SavedCardsView: UIView {
         }
 
         tableView.snp.makeConstraints {
-            $0.top.equalTo(segmentedControl.snp.bottom).offset(20)
+            $0.top.equalTo(segmentedControl.snp.bottom)
             $0.directionalHorizontalEdges.equalToSuperview()
             $0.bottom.equalToSuperview()
         }
@@ -204,6 +204,11 @@ final class SavedCardsView: UIView {
         }
         onChangeSegmentControl?(index)
     }
+
+    func setHidden(_ isHidden: Bool) {
+        tableView.isHidden = isHidden
+        tableView.reloadData()
+    }
 }
 
 extension SavedCardsView: UITableViewDelegate {
@@ -212,7 +217,7 @@ extension SavedCardsView: UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        if currentSection == .savedCards {
+        if currentSection == .savedCards, section == 1 {
             let view = tableView.dequeueHeaderFooter(SectionHeaderView.self)
             view?.titleLabel.text = "Not available for this payment"
             return view
@@ -221,10 +226,7 @@ extension SavedCardsView: UITableViewDelegate {
     }
 
     func tableView(_: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if currentSection == .savedCards {
-            return section == 1 ? 24 : 0
-        }
-        return 0
+        currentSection == .savedCards ? 24 : 0
     }
 }
 
@@ -234,16 +236,24 @@ extension SavedCardsView: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return cards[currentSection]?[safe: section]?.count ?? 1
+        return cards[currentSection]?[safe: section]?.count ?? 0
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let type = cards[currentSection],
-              let cellKind = type[safe: indexPath.section]?[indexPath.row] else {
-            return UITableViewCell()
-        }
+        switch currentSection {
+        case .savedCards:
+            guard let type = cards[currentSection],
+                  let cellKind = type[safe: indexPath.section]?[indexPath.row] else {
+                return UITableViewCell()
+            }
 
-        return cell(forKind: cellKind, tableView: tableView, indexPath: indexPath)
+            return self.cell(forKind: cellKind, tableView: tableView, indexPath: indexPath)
+
+        case .newCard:
+            let cell = UITableViewCell()
+            cell.frame.size.height = .leastNonzeroMagnitude
+            return cell
+        }
     }
 }
 
@@ -259,9 +269,7 @@ private extension SavedCardsView {
         switch kind {
         case let .card(viewModel):
             return makeDefaultCell(viewModel, tableView, indexPath)
-        case .addNewCard:
-            return makeAddNewCardCell(tableView, indexPath)
-        case .error:
+        case .addNewCard, .error:
             return UITableViewCell()
         }
     }
@@ -295,32 +303,10 @@ private extension SavedCardsView {
             self?.onDeleteButtonTapped?(indexPath)
         }
 
-        return cell
-    }
-
-    func makeAddNewCardCell(
-        _ tableView: UITableView,
-        _ indexPath: IndexPath
-    ) -> UITableViewCell {
-        guard let cell = tableView.dequeue(
-            cellClass: NewCardCell.self,
-            for: indexPath
-        ) else {
-            return UITableViewCell()
+        cell.onCVVCodeEndEditing = { [weak self] code in
+            self?.onCVVCodeEndEditing?(indexPath, code)
         }
 
-        cell.onSaveCardTapped = { [weak self] in
-            self?.tableView.performBatchUpdates(nil, completion: nil)
-        }
-        
-        cell.onChangeDigits = { [weak self] digits in
-            self?.onChangeDigits?(digits)
-        }
-        
-        cell.onFieldEndEditing = { [weak self] field in
-            self?.onFieldEndEditing?(field)
-        }
-        
         return cell
     }
 }
@@ -367,6 +353,6 @@ extension SavedCardsView: ShimmerableView {
     }
 
     var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
-        [segmentedControlShimmerView: .value(21)]
+        [segmentedControlShimmerView: .value(Int(UICustomization.Button.cornerRadius))]
     }
 }

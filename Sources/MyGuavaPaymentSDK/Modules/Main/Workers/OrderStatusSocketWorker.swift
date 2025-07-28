@@ -33,18 +33,23 @@ final class OrderStatusSocketWorker {
     }
     
     func startListening(
-        onStatusUpdate: @escaping (PaymentOrderStatusEvent) -> Void
+        onStatusUpdate: @escaping (Result<PaymentOrderStatusEvent, Error>) -> Void
     ) {
-        webSocketClient.startListening { rawEvent in
-            guard
-                let data = rawEvent.data(using: .utf8),
-                let event = try? JSONDecoder().decode(PaymentOrderStatusEvent.self, from: data)
-            else {
-                print("[OrderListener] Failed to decode PaymentOrderStatusEvent: \(rawEvent)")
-                return
+        webSocketClient.startListening(
+            onEvent: { rawEvent in
+                guard
+                    let data = rawEvent.data(using: .utf8),
+                    let event = try? JSONDecoder().decode(PaymentOrderStatusEvent.self, from: data)
+                else {
+                    print("[OrderListener] Failed to decode PaymentOrderStatusEvent: \(rawEvent)")
+                    return
+                }
+                onStatusUpdate(.success(event))
+            },
+            onFailure: { error in
+                onStatusUpdate(.failure(error))
             }
-            onStatusUpdate(event)
-        }
+        )
     }
     
     func stopListening() {

@@ -25,7 +25,7 @@ struct PaymentOrderStatusEvent: Decodable {
     
     struct Payment: Decodable {
         let id: String
-        let date: String
+        let date: String?
         let amount: MoneyAmount
         let exchangeRate: Double?
         let referenceNumber: String?

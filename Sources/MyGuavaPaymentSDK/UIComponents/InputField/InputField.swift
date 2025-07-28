@@ -8,9 +8,9 @@
 import UIKit
 
 open class InputFieldTextProcessor: NSObject, UITextFieldDelegate {
-    public var didChangeText: ((String) -> Void)?
+    var didChangeText: ((String) -> Void)?
     /// Callback of textField delegate `textFieldShouldReturn` was triggered
-    public var didShouldReturn: (() -> Void)?
+    var didShouldReturn: (() -> Void)?
 }
 
 /// InputField Represents a field for entering text.
@@ -32,7 +32,7 @@ open class InputFieldTextProcessor: NSObject, UITextFieldDelegate {
 ///     icon: Icons.hashtag // Allows you to set an icon
 ///)
 /// ```
-public class InputField: UIView {
+class InputField: UIView {
 
    // MARK: - Subviews
 
@@ -45,7 +45,7 @@ public class InputField: UIView {
 
     /// Sets didChangeText callback for current InputFieldTextProcessor
     /// Sets current InputFieldTextProcessor as UITextFieldDelegate for internal textfield
-    public var didChangeText: ((String) -> Void)? {
+    var didChangeText: ((String) -> Void)? {
         set {
             input.textFieldDelegate = textProcessor
             textProcessor.didChangeText = newValue
@@ -57,7 +57,7 @@ public class InputField: UIView {
     
     /// Sets didShouldReturn callback for current InputFieldTextProcessor
     /// Sets current InputFieldTextProcessor as UITextFieldDelegate for internal textfield
-    public var didShouldReturn: (() -> Void)? {
+    var didShouldReturn: (() -> Void)? {
         set {
             input.textFieldDelegate = textProcessor
             textProcessor.didShouldReturn = newValue
@@ -70,7 +70,7 @@ public class InputField: UIView {
     private var textProcessor: InputFieldTextProcessor
 
     /// Input
-    public lazy var input: PlaceholderInputField = {
+    lazy var input: PlaceholderInputField = {
         let input = PlaceholderInputField(
             state: .enabled,
             autoMinimizesHelper: autoMinimizesHelper,
@@ -83,7 +83,7 @@ public class InputField: UIView {
         return input
     }()
 
-    public let cardImageView: UIImageView = {
+    let cardImageView: UIImageView = {
         let image = UIImageView()
         image.contentMode = .scaleAspectFit
         image.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -98,14 +98,14 @@ public class InputField: UIView {
 
     private let textFieldContainerStackView = UIStackView()
 
-    public let rightAccessoryStackView: UIStackView = {
+    let rightAccessoryStackView: UIStackView = {
         let stack = UIStackView()
         stack.spacing = 0
         stack.setContentHuggingPriority(.required, for: .horizontal)
         return stack
     }()
 
-    public lazy var leftAccessoryStackView: UIStackView = {
+    lazy var leftAccessoryStackView: UIStackView = {
         input.leftAccessoryStackView
     }()
 
@@ -164,26 +164,26 @@ public class InputField: UIView {
 
     private var customRightAccessoryAction: (() -> Void)?
 
-    public weak var textFieldDelegate: UITextFieldDelegate? {
+    weak var textFieldDelegate: UITextFieldDelegate? {
         didSet {
             input.textFieldDelegate = textFieldDelegate
         }
     }
 
-    public var isLoading: Bool = false {
+    var isLoading: Bool = false {
         didSet {
             updateLoading()
         }
     }
 
-    public var state: State = .enabled {
+    var state: State = .enabled {
         didSet {
             applyStyle()
         }
     }
 
     /// Allows you to set the message text for the left part under the selector field
-    public var bottomLeftText: String? {
+    var bottomLeftText: String? {
         didSet {
             bottomLeftLabel.text = bottomLeftText
             applyStyle()
@@ -191,7 +191,7 @@ public class InputField: UIView {
     }
 
     /// Allows you to set the message text for the right part under the selector field
-    public var bottomRightText: String? {
+    var bottomRightText: String? {
         didSet {
             bottomRightLabel.text = bottomRightText
             applyStyle()
@@ -199,19 +199,19 @@ public class InputField: UIView {
     }
 
     /// Forwarded property for setting input view
-    public var textFieldInputView: UIView? {
+    var textFieldInputView: UIView? {
         didSet {
             input.textField.inputView = textFieldInputView
         }
     }
 
     /// Helper label handle
-    public var helperLabel: UILabel {
+    var helperLabel: UILabel {
         return input.helperLabel
     }
 
     /// Adds custom UIButton to last index on accessory stack view, adds sets button's size to 40x40
-    public var rightButton: UIButton? {
+    var rightButton: UIButton? {
         didSet {
             if let button = rightButton {
                 rightAccessoryStackView.addArrangedSubview(button)
@@ -248,7 +248,7 @@ public class InputField: UIView {
     ///   - usesHelperTextAsPlaceholder: boolean value that determines whether helper text is used as a placeholder
     ///   - isReadOnly: flag indicating whether the field is in read-only mode
     ///   - styleFactory: style factory used to generate UI styles
-    public init(
+    init(
         state: State = .enabled,
         textProcessor: InputFieldTextProcessor = DefaultTextProcessor(),
         helperText: String? = nil,
@@ -336,7 +336,7 @@ public class InputField: UIView {
         addSubview(mainContainerStackView)
     }
 
-    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else {
             super.touchesEnded(touches, with: event)
             return
@@ -362,7 +362,7 @@ public class InputField: UIView {
     ///   - image: called in button.setImage for .normal state
     ///   - target: external selctor target
     ///   - selector: external selctor for .touchUpInside event
-    public func addRightButton(with image: UIImage?, target: Any?, selector: Selector) {
+    func addRightButton(with image: UIImage?, target: Any?, selector: Selector) {
         let customButton = UIButton(type: .custom)
         customButton.setImage(image, for: .normal)
         customButton.addTarget(target, action: selector, for: .touchUpInside)
@@ -373,7 +373,7 @@ public class InputField: UIView {
     /// - Parameters:
     ///   - image: called in button.setImage for .normal state
     ///   - action: escaping action closure for .touchUpInside event
-    public func addRightButton(with image: UIImage?, action: @escaping () -> Void) {
+    func addRightButton(with image: UIImage?, action: @escaping () -> Void) {
         let customButton = UIButton(type: .custom)
         customButton.setImage(image, for: .normal)
         customButton.addTarget(target, action: #selector(customRightAccessoryActionHandler), for: .touchUpInside)
@@ -381,7 +381,7 @@ public class InputField: UIView {
         rightButton = customButton
     }
 
-    public func addRightCustomButton(_ button: UIButton) {
+    func addRightCustomButton(_ button: UIButton) {
         rightAccessoryStackView.addArrangedSubview(button)
         updateAccessories()
     }
@@ -390,30 +390,30 @@ public class InputField: UIView {
     /// - Parameters:
     ///   - text: text we want to be setted
     ///   - animated: update text animated or not
-    public func setText(_ text: String, animated: Bool = true) {
+    func setText(_ text: String, animated: Bool = true) {
         input.setText(text, animated: animated)
     }
 
     /// Removes last accessory view in stack by calling .removeFromSuperview()
-    public func removeRightMostAccessory() {
+    func removeRightMostAccessory() {
         rightAccessoryStackView.arrangedSubviews.last?.removeFromSuperview()
     }
     
     /// Removes all accessory views in stack by calling .removeFromSuperview()
-    public func removeAllAccessoryViews() {
+    func removeAllAccessoryViews() {
         rightAccessoryStackView.arrangedSubviews.forEach{ $0.removeFromSuperview() }
     }
 
     /// Function to set text processor to input
     /// - Parameter textProcessor: custom text processor
-    public func setTextProcessor(_ textProcessor: InputFieldTextProcessor) {
+    func setTextProcessor(_ textProcessor: InputFieldTextProcessor) {
         self.textProcessor = textProcessor
         input.textFieldDelegate = textProcessor
     }
     
     /// Changes current accessory views constraints
     /// - Parameter padding: new accessory padding used as directionalEdges
-    public func setAccessoriesViewPadding(padding: UIEdgeInsets) {
+    func setAccessoriesViewPadding(padding: UIEdgeInsets) {
         let newStyle = styleFactory.stockStyle.accessoryPadding(padding)
         self.styleFactory = StockStyleFactory(style: newStyle)
         updateView(with: currentStyle)
@@ -421,7 +421,7 @@ public class InputField: UIView {
 
     /// Changes current accessory views constraints
     /// - Parameter size: new accessory size used for snp constraints
-    public func setAccessoriesViewSize(size: CGSize) {
+    func setAccessoriesViewSize(size: CGSize) {
         let newStyle = styleFactory.stockStyle.accessorySize(size)
         self.styleFactory = StockStyleFactory(style: newStyle)
         updateView(with: currentStyle)
@@ -432,7 +432,7 @@ public class InputField: UIView {
     ///   - icon: card UIImage
     ///   - iconWidth: card view width, height is fixed
     ///   - iconTrailingOffset: spacing between
-    public func setCardIcon(_ icon: UIImage?, iconWidth: CGFloat = 30, iconTrailingOffset: CGFloat = .spacing100) {
+    func setCardIcon(_ icon: UIImage?, iconWidth: CGFloat = 30, iconTrailingOffset: CGFloat = .spacing100) {
         cardImageView.image = icon
         input.setInputLeadingOffset(offset: iconTrailingOffset)
         cardImageView.snp.updateConstraints { make in
@@ -441,7 +441,7 @@ public class InputField: UIView {
     }
     
     /// Sets icon to nil, iconWidth & iconTrailingOffset to 0
-    public func hideCardIcon() {
+    func hideCardIcon() {
         setCardIcon(nil, iconWidth: 0, iconTrailingOffset: 0)
     }
 
@@ -557,9 +557,9 @@ public class InputField: UIView {
         return view
     }
 
-    // MARK: - Public methods
+    // MARK: - Internal methods
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         return CGSize(width: 256, height: UIView.noIntrinsicMetric)
     }
 
@@ -587,29 +587,29 @@ public class InputField: UIView {
 }
 
 extension InputField {
-    public func setPlaceholderText(_ text: String) {
+    func setPlaceholderText(_ text: String) {
         input.setPlaceholder(text)
         applyStyle()
     }
 
-    public func setHelperText(_ text: String) {
+    func setHelperText(_ text: String) {
         input.setHelper(text)
         applyStyle()
     }
 
-    public func setBottomRightText(_ text: String) {
+    func setBottomRightText(_ text: String) {
         bottomRightText = text.isEmpty ? nil : text
         bottomRightLabel.text = text.isEmpty ? nil : text
         applyStyle()
     }
 
-    public func setBottomLeftText(_ text: String) {
+    func setBottomLeftText(_ text: String) {
         bottomLeftText = text.isEmpty ? nil : text
         bottomLeftLabel.text = text.isEmpty ? nil : text
         applyStyle()
     }
 
-    public func setIconImage(_ image: UIImage?, size: CGSize? = nil) {
+    func setIconImage(_ image: UIImage?, size: CGSize? = nil) {
         if iconAccessory == nil {
             let iconAccessory = accessoryView(
                 accessory: UIImageView(image: image),
@@ -627,11 +627,11 @@ extension InputField {
 // MARK: - Forwarded methods
 extension InputField {
     /// Sets input's attributedText
-    public func setAttributedText(_ text: NSAttributedString) {
+    func setAttributedText(_ text: NSAttributedString) {
         input.setAttributedText(text)
     }
 
-    public var keyboardType: UIKeyboardType {
+    var keyboardType: UIKeyboardType {
         set {
             input.keyboardType = newValue
         }
@@ -640,7 +640,7 @@ extension InputField {
         }
     }
 
-    public var autocapitalizationType: UITextAutocapitalizationType {
+    var autocapitalizationType: UITextAutocapitalizationType {
         set {
             input.autocapitalizationType = newValue
         }
@@ -649,7 +649,7 @@ extension InputField {
         }
     }
 
-    public var autoCorrectionType: UITextAutocorrectionType {
+    var autoCorrectionType: UITextAutocorrectionType {
         set {
             input.autocorrectionType = newValue
         }
@@ -658,7 +658,7 @@ extension InputField {
         }
     }
 
-    public var keyboardAppearance: UIKeyboardAppearance {
+    var keyboardAppearance: UIKeyboardAppearance {
         set {
             input.keyboardAppearance = newValue
         }
@@ -667,7 +667,7 @@ extension InputField {
         }
     }
 
-    public var returnKeyType: UIReturnKeyType {
+    var returnKeyType: UIReturnKeyType {
         set {
             input.returnKeyType = newValue
         }
@@ -676,24 +676,24 @@ extension InputField {
         }
     }
 
-    public override func becomeFirstResponder() -> Bool {
+    override func becomeFirstResponder() -> Bool {
         input.becomeFirstResponder()
     }
 
-    public override var isFirstResponder: Bool {
+    override var isFirstResponder: Bool {
         input.isFirstResponder
     }
 
-    public override var canBecomeFirstResponder: Bool {
+    override var canBecomeFirstResponder: Bool {
         input.canBecomeFirstResponder
     }
 
-    public override var canResignFirstResponder: Bool {
+    override var canResignFirstResponder: Bool {
         input.canResignFirstResponder
     }
 
     /// TV OS
-    public override var canBecomeFocused: Bool {
+    override var canBecomeFocused: Bool {
         input.canBecomeFocused
     }
 }

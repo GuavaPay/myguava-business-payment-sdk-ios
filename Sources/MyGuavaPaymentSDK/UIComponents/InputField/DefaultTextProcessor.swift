@@ -9,8 +9,8 @@ import UIKit
 
 /// Default implementation for InputFieldTextProcessor
 /// does no validation or formatting, triggers didChangeText callback for every character change
-public class DefaultTextProcessor: InputFieldTextProcessor {
-    public func textField(
+class DefaultTextProcessor: InputFieldTextProcessor {
+    func textField(
         _ textField: UITextField,
         shouldChangeCharactersIn range: NSRange,
         replacementString string: String
@@ -21,7 +21,7 @@ public class DefaultTextProcessor: InputFieldTextProcessor {
         return true
     }
 
-    public func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         didShouldReturn?()
         return true
     }

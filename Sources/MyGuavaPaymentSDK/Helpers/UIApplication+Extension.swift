@@ -7,7 +7,7 @@
 
 import UIKit
 
-public extension UIApplication {
+extension UIApplication {
 
     static func setRootViewController(_ viewController: UIViewController?) {
         UIApplication.shared.delegate?.window??.rootViewController = viewController

@@ -38,7 +38,7 @@ protocol SelectCountryCodeModuleInput: AnyObject {
     func configure(_ output: SelectCountryCodeModuleOutput?)
 }
 
-public protocol SelectCountryCodeModuleOutput: AnyObject {
+protocol SelectCountryCodeModuleOutput: AnyObject {
 
     func didSelectCountry(_ country: CountryResponse)
 }

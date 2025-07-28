@@ -7,14 +7,14 @@
 
 import UIKit
 
-public final class SegmentedControl: UISegmentedControl {
+final class SegmentedControl: UISegmentedControl {
 
     // MARK: - Properties
-    public struct SegmentItem {
+    struct SegmentItem {
         let title: String
         let action: (Int) -> Void
 
-        public init(title: String, action: @escaping (Int) -> Void) {
+        init(title: String, action: @escaping (Int) -> Void) {
             self.title = title
             self.action = action
         }
@@ -28,7 +28,7 @@ public final class SegmentedControl: UISegmentedControl {
     // MARK: - Init
 
     /// Creates a segmented control with segments having the given titles or images.
-    public init(segmentItems: [SegmentItem] = [], style: Style = StockStyle()) {
+    init(segmentItems: [SegmentItem] = [], style: Style = StockStyle()) {
         self.segments = segmentItems
         self.style = style
         super.init(items: segmentItems.map{ $0.title })
@@ -36,7 +36,7 @@ public final class SegmentedControl: UISegmentedControl {
     }
 
     /// Creates a segmented control with segments having the given titles or images.
-    public init(actions: [UIAction], style: Style = StockStyle()) {
+    init(actions: [UIAction], style: Style = StockStyle()) {
         self.style = style
         super.init(items: actions)
 
@@ -44,7 +44,7 @@ public final class SegmentedControl: UISegmentedControl {
     }
 
     /// Creates a segmented control with segments  using Strings, UIImages or UIActions
-    public init(items: [Any], style: Style = StockStyle()) {
+    init(items: [Any], style: Style = StockStyle()) {
         self.style = style
         super.init(items: items)
 
@@ -55,9 +55,9 @@ public final class SegmentedControl: UISegmentedControl {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Public methods
+    // MARK: - methods
 
-    public override func actionForSegment(at segment: Int) -> UIAction? {
+    override func actionForSegment(at segment: Int) -> UIAction? {
         guard !segments.isEmpty, let item = segments[safe: segment] else {
             if #available(iOS 14.0, *) {
                 return super.actionForSegment(at: segment)
@@ -75,7 +75,7 @@ public final class SegmentedControl: UISegmentedControl {
     ///   - item: item for insertion
     ///   - segment: index for insertion
     ///   - animated: animate segments change, default is true
-    public func insertSegment(_ item: SegmentItem, at segment: Int, animated: Bool = true) {
+    func insertSegment(_ item: SegmentItem, at segment: Int, animated: Bool = true) {
         segments.insert(item, at: segment)
         if #available(iOS 14.0, *) {
             self.insertSegment(action: UIAction(title: item.title, handler: { _ in
@@ -90,25 +90,25 @@ public final class SegmentedControl: UISegmentedControl {
     /// - Parameters:
     ///   - items: array of SegmentItem
     ///   - animated: animate segments change, default is false
-    public func setSegments(_ items: [SegmentItem], animated: Bool = false) {
+    func setSegments(_ items: [SegmentItem], animated: Bool = false) {
         segments = items
         segments.enumerated().forEach { index, segment in
             insertSegment(segment, at: index, animated: animated)
         }
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         guard previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle else {
             return
         }
         applyStyle()
     }
 
-    public override var intrinsicContentSize: CGSize {
+    override var intrinsicContentSize: CGSize {
         return CGSize(width: UIScreen.main.bounds.width, height: CGFloat.spacing1000)
     }
 
-    public override func layoutSubviews() {
+    override func layoutSubviews() {
         super.layoutSubviews()
 
         layer.cornerRadius = bounds.height / 2

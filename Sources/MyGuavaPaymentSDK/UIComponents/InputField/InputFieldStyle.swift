@@ -9,7 +9,7 @@ import UIKit
 
 extension InputField {
 
-    public enum State: CaseIterable {
+    enum State: CaseIterable {
         case enabled
         case focused
         case error
@@ -28,19 +28,19 @@ extension InputField {
         }
     }
 
-    public protocol AccessoryStyle: ForegroundColor, Padding, Size {}
+    protocol AccessoryStyle: ForegroundColor, Padding, Size {}
 
-    public struct StockAccessoryStyle: AccessoryStyle {
-        public var size: CGSize = .init(width: .spacing600, height: .spacing600)
+    struct StockAccessoryStyle: AccessoryStyle {
+        var size: CGSize = .init(width: .spacing600, height: .spacing600)
 
-        public var foregroundColor: UIColor = { .input.secondaryForeground }()
-        public var padding: UIEdgeInsets = .init(top: .spacing200,
+        var foregroundColor: UIColor = { .input.secondaryForeground }()
+        var padding: UIEdgeInsets = .init(top: .spacing200,
                                                left: .spacing200,
                                                bottom: .spacing200,
                                                right: .spacing200)
     }
 
-    public protocol Style: ForegroundColor {
+    protocol Style: ForegroundColor {
         var backDropStyle: InputBackDropView.Style { get set }
         var inputFieldStyle: PlaceholderInputField.Style { get set }
         var iconTintColor: UIColor { get set }
@@ -51,45 +51,45 @@ extension InputField {
         func accessorySize(_ value: CGSize) -> Self
     }
 
-    public struct StockStyle: Style {
+    struct StockStyle: Style {
 
-        public var backDropStyle: InputBackDropView.Style = { InputBackDropView.StockStyle() }()
-        public var inputFieldStyle: PlaceholderInputField.Style = { PlaceholderInputField.StockStyle() }()
-        public var iconTintColor: UIColor = { .input.secondaryForeground }()
-        public var foregroundColor: UIColor = { .input.secondaryForeground }()
+        var backDropStyle: InputBackDropView.Style = { InputBackDropView.StockStyle() }()
+        var inputFieldStyle: PlaceholderInputField.Style = { PlaceholderInputField.StockStyle() }()
+        var iconTintColor: UIColor = { .input.secondaryForeground }()
+        var foregroundColor: UIColor = { .input.secondaryForeground }()
 
-        public var accessoryStyle: AccessoryStyle = StockAccessoryStyle()
-        public init() {}
+        var accessoryStyle: AccessoryStyle = StockAccessoryStyle()
+        init() {}
 
-        public func accessoryPadding(_ value: UIEdgeInsets) -> Self {
+        func accessoryPadding(_ value: UIEdgeInsets) -> Self {
             var copy = self
             copy.accessoryStyle.padding = value
             return copy
         }
 
-        public func accessorySize(_ value: CGSize) -> Self {
+        func accessorySize(_ value: CGSize) -> Self {
             var copy = self
             copy.accessoryStyle.size = value
             return copy
         }
     }
 
-    public protocol StyleFactoryProtocol {
+    protocol StyleFactoryProtocol {
 
         var stockStyle: InputField.Style { get }
 
         func styleForstate(_ state: InputField.State) -> InputField.Style
     }
 
-    public struct StockStyleFactory: StyleFactoryProtocol {
+    struct StockStyleFactory: StyleFactoryProtocol {
 
-        public private(set) var stockStyle: Style
+        private(set) var stockStyle: Style
 
-        public init(style: Style = StockStyle()) {
+        init(style: Style = StockStyle()) {
             self.stockStyle = style
         }
 
-        public func styleForstate(_ state: InputField.State) -> InputField.Style {
+        func styleForstate(_ state: InputField.State) -> InputField.Style {
             var stock = self.stockStyle
             switch state {
             case .enabled:

@@ -58,6 +58,10 @@ enum UICustomization {
             UICustomizationProvider.shared.uiCustomization.button.textColor
         }
 
+        static var secondaryTextColor: UIColor {
+            UICustomizationProvider.shared.uiCustomization.button.secondaryTextColor
+        }
+
         static var cornerRadius: CGFloat {
             UICustomizationProvider.shared.uiCustomization.button.cornerRadius
         }

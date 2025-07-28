@@ -1,13 +1,13 @@
 //
 //  PlaceholderInputField.swift
-//  
+//
 //
 //  Created by Mikhail Kirillov on 14/6/24.
 //
 
 import UIKit
 
-public extension PlaceholderInputField {
+extension PlaceholderInputField {
 
     enum State {
         case enabled
@@ -28,37 +28,37 @@ public extension PlaceholderInputField {
     }
 
     struct StockStyle: Style {
-        public var tintColor: UIColor = UICustomization.Input.textColor
+        var tintColor: UIColor = UICustomization.Input.textColor
 
-        public var titleFont: UIFont = .caption1Regular
+        var titleFont: UIFont = .caption1Regular
 
         /// Always use .lineBreakUsing(.byWordWrapping) when using custom font
-        public var inputTextFont: UIFont = .body1Regular
-        public var inputPlaceholderFont: UIFont = .body1Regular
+        var inputTextFont: UIFont = .body1Regular
+        var inputPlaceholderFont: UIFont = .body1Regular
 
-        public var titleColor: UIColor = .input.secondaryForeground
-        public var inputPlaceholderColor: UIColor = UICustomization.Input.placeholderTextColor
-        public var inputTextColor: UIColor = UICustomization.Input.textColor
+        var titleColor: UIColor = .input.secondaryForeground
+        var inputPlaceholderColor: UIColor = UICustomization.Input.placeholderTextColor
+        var inputTextColor: UIColor = UICustomization.Input.textColor
 
-        public func titleColor(_ value: UIColor) -> Self {
+        func titleColor(_ value: UIColor) -> Self {
             var copy = self
             copy.titleColor = value
             return copy
         }
 
-        public func inputTextColor(_ value: UIColor) -> Self {
+        func inputTextColor(_ value: UIColor) -> Self {
             var copy = self
             copy.inputTextColor = value
             return copy
         }
 
-        public func inputPlaceholderColor(_ value: UIColor) -> Self {
+        func inputPlaceholderColor(_ value: UIColor) -> Self {
             var copy = self
             copy.inputPlaceholderColor = value
             return copy
         }
 
-        public func styleForState(_ state: State) -> Style {
+        func styleForState(_ state: State) -> Style {
             let stock = StockStyle()
             switch state {
             case .enabled, .focused, .success:
@@ -73,6 +73,6 @@ public extension PlaceholderInputField {
             }
         }
 
-        public init() {}
+        init() {}
     }
 }

@@ -11,15 +11,21 @@ import SnapKit
 final class CVVCodeInputView: UIView {
 
     var maxLength: Int = 3
+    var onCVVCodeEndEditing: ((String) -> Void)?
 
     private lazy var cvvInputField: UITextField = {
         let textField = UITextField()
         textField.addKeyboardDoneToToolbar()
         textField.delegate = self
-        textField.placeholder = "CVV"
         textField.keyboardType = .numberPad
         textField.font = .body1Regular
-        textField.textColor = .label
+        textField.textColor = UICustomization.Input.textColor
+        textField.attributedPlaceholder = NSAttributedString(
+            string: "CVV",
+            attributes: [
+                .foregroundColor: UICustomization.Input.placeholderTextColor
+            ]
+        )
         textField.backgroundColor = .clear
         textField.borderStyle = .none
         textField.setLeftPadding(12)
@@ -33,11 +39,11 @@ final class CVVCodeInputView: UIView {
     }()
 
     private let containerView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .gray200
-        view.layer.cornerRadius = 8
-        view.layer.borderWidth = 1
-        view.layer.borderColor = UIColor.input.borderRest.cgColor
+        let view = ThemedInputContainerView()
+        view.backgroundColor = UICustomization.Input.backgroundColor
+        view.layer.cornerRadius = UICustomization.Input.cornerRadius
+        view.layer.borderWidth = UICustomization.Input.borderWidth
+        view.layer.borderColor = UICustomization.Input.borderColor.cgColor
         return view
     }()
 
@@ -107,5 +113,8 @@ extension CVVCodeInputView: UITextFieldDelegate {
         textField.text = digits
         return false
     }
-}
 
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        onCVVCodeEndEditing?(textField.text ?? "")
+    }
+}

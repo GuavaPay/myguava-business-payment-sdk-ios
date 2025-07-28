@@ -7,7 +7,7 @@
 
 import UIKit
 
-public class SelectCountryCodeTableViewCell: UITableViewCell {
+class SelectCountryCodeTableViewCell: UITableViewCell {
 
     private let flagImageView: UIImageView = {
         let imageView = UIImageView()

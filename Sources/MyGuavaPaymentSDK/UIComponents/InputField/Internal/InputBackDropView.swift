@@ -7,13 +7,13 @@
 
 import UIKit
 
-public class InputBackDropView: UIView {
+class InputBackDropView: UIView {
 
     private let containerView = UIView()
     private var trailingContentConstraint = NSLayoutConstraint()
     private var style: Style
 
-    public init(state: InputField.State, style: Style, view: UIView? = nil) {
+    init(state: InputField.State, style: Style, view: UIView? = nil) {
         self.style = style
         super.init(frame: .zero)
 
@@ -35,7 +35,7 @@ public class InputBackDropView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         applyStyle(style)
     }
@@ -79,7 +79,7 @@ public class InputBackDropView: UIView {
         setRightPadding(style.padding.right)
     }
 
-    public override func layoutSubviews() {
+    override func layoutSubviews() {
         super.layoutSubviews()
         self.layer.cornerRadius = style.cornerRadius == .full ? bounds.height / 2 : style.cornerRadius
     }

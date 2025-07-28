@@ -5,14 +5,14 @@
 
 import Foundation
 
-public protocol Size {
+protocol Size {
     var size: CGSize { get set }
 
     func size(_ value: CGSize) -> Self
 }
 
 extension Size {
-    public func size(_ value: CGSize) -> Self {
+    func size(_ value: CGSize) -> Self {
         var copy = self
         copy.size = value
         return copy

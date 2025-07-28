@@ -9,7 +9,7 @@ import UIKit
 
 extension SearchFieldView {
 
-    public protocol Style: CornerRadius,
+    protocol Style: CornerRadius,
                            BackgroundColor,
                            ForegroundColor,
                            BorderColor,
@@ -23,30 +23,30 @@ extension SearchFieldView {
         func activeBorderColor(_ value: UIColor) -> Self
     }
 
-    public struct StockStyle: Style {
-        public var height: CGFloat = .spacing900
-        public var tintColor: UIColor
-        public var titleFont: UIFont = .headlineRegular
-        public var cornerRadius: CGFloat = .radius200
-        public var backgroundColor: UIColor
-        public var foregroundColor: UIColor
-        public var cursorColor: UIColor
-        public var borderColor: UIColor
-        public var activeBorderColor: UIColor
+    struct StockStyle: Style {
+        var height: CGFloat = .spacing900
+        var tintColor: UIColor
+        var titleFont: UIFont = .headlineRegular
+        var cornerRadius: CGFloat = .radius200
+        var backgroundColor: UIColor
+        var foregroundColor: UIColor
+        var cursorColor: UIColor
+        var borderColor: UIColor
+        var activeBorderColor: UIColor
 
-        public func cursorColor(_ value: UIColor) -> Self {
+        func cursorColor(_ value: UIColor) -> Self {
             var copy = self
             copy.cursorColor = value
             return copy
         }
 
-        public func activeBorderColor(_ value: UIColor) -> Self {
+        func activeBorderColor(_ value: UIColor) -> Self {
             var copy = self
             copy.activeBorderColor = value
             return copy
         }
 
-        public init(
+        init(
             cursorColor: UIColor = .input.primaryForeground,
             tintColor: UIColor = .input.secondaryForeground,
             backgroundColor: UIColor = .input.backgroundRest,
@@ -66,7 +66,7 @@ extension SearchFieldView {
 
 extension SearchFieldView.Style {
 
-    public static func getStyle() -> SearchFieldView.Style {
+    static func getStyle() -> SearchFieldView.Style {
         return SearchFieldView.StockStyle()
     }
 }

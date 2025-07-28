@@ -7,10 +7,10 @@
 
 import UIKit
 
-public final class SearchFieldView: UIView {
+final class SearchFieldView: UIView {
 
-    public var cancelButtonTapHandler: (() -> Void)?
-    public var clearButtonTapHandler: (() -> Void)?
+    var cancelButtonTapHandler: (() -> Void)?
+    var clearButtonTapHandler: (() -> Void)?
 
     // MARK: - Subviews
 
@@ -75,12 +75,12 @@ public final class SearchFieldView: UIView {
     // MARK: - Properties
 
     private var style: Style
-    public weak var delegate: UITextFieldDelegate? {
+    weak var delegate: UITextFieldDelegate? {
         didSet {
             textField.delegate = delegate
         }
     }
-    public var placeholder: String = "" {
+    var placeholder: String = "" {
         didSet {
             textField.attributedPlaceholder = NSAttributedString(
                 string: placeholder,
@@ -92,11 +92,11 @@ public final class SearchFieldView: UIView {
         }
     }
 
-    public var valueChanged: ((String) -> Void)?
+    var valueChanged: ((String) -> Void)?
 
     // MARK: - Init
 
-    public init(style: Style = StockStyle()) {
+    init(style: Style = StockStyle()) {
         self.style = style
 
         super.init(frame: .zero)
@@ -210,26 +210,26 @@ public final class SearchFieldView: UIView {
         )
     }
 
-    // MARK: - Public methods
+    // MARK: - methods
 
-    public func setValue(_ value: String?) {
+    func setValue(_ value: String?) {
         textField.text = value
         clearIconImageView.isHidden = value == nil
     }
 
-    public func becomeResponder() {
+    func becomeResponder() {
         textField.becomeFirstResponder()
     }
 
-    public func resignResponder() {
+    func resignResponder() {
         textField.resignFirstResponder()
     }
 
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         applyStyle()
     }
 
-    public func applyStyle() {
+    func applyStyle() {
         let style = StockStyle.getStyle()
         updateViewWithStyle(style)
     }

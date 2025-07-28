@@ -6,7 +6,7 @@
 import Foundation
 
 /// Protocol for cells which need to shimmer loading support
-public protocol ShimmerableCell: ShimmerableView {
+protocol ShimmerableCell: ShimmerableView {
     /// As ShimmerableCell subcribe to ShimmerableView protocol, this function helps us to start loading via cells.
     /// Inside it need to 'startShimmering' function of ShimmerableView
     func showLoading()
@@ -19,6 +19,6 @@ public protocol ShimmerableCell: ShimmerableView {
     func hideLoading()
 }
 
-public extension ShimmerableCell {
+extension ShimmerableCell {
     func showLoading(_ indexPath: IndexPath? = nil) {}
 }

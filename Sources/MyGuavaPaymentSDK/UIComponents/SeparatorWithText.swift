@@ -85,12 +85,12 @@ final class SeparatorWithTextView: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
     }
 }
@@ -98,11 +98,11 @@ final class SeparatorWithTextView: UIView {
 // MARK: - SeparatorWithTextView + ShimmerableView
 
 extension SeparatorWithTextView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [self]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [self: .automatic]
     }
 }

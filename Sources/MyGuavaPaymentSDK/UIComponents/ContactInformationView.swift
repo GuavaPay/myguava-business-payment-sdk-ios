@@ -8,7 +8,7 @@
 import UIKit
 import SnapKit
 
-public final class ContactInformationView: UIView {
+final class ContactInformationView: ThemedInputContainerView {
     var onSelectPhoneCode: (() -> Void)?
     var onSaveButton: ((_ phoneNumber: String, _ email: String) -> Void)?
 
@@ -277,7 +277,7 @@ public final class ContactInformationView: UIView {
         }
     }
 
-    public func configureSelectCountry(_ country: CountryResponse) {
+    func configureSelectCountry(_ country: CountryResponse) {
         countryCodeSelectFieldView.setIconView(
             .flag(view:
                     UIImageView(image: Icons.Flags.icon(with: country.countryCode))
@@ -318,12 +318,12 @@ public final class ContactInformationView: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
     }
 }
@@ -331,11 +331,11 @@ public final class ContactInformationView: UIView {
 // MARK: - ContactInformationView + ShimmerableView
 
 extension ContactInformationView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [self]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [self: .value(10)]
     }
 }

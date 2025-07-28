@@ -18,6 +18,7 @@ struct Binding: Codable, Equatable {
     let lastUseDate: String?
     let activity: Bool?
     let cardData: CardData?
+    let name: String?
     let product: Product?
     
     var isEnabled: Bool {

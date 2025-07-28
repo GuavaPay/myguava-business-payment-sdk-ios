@@ -142,6 +142,14 @@ extension YourViewController: PaymentDelegate {
         // Handle payment result: .success, .unsuccess, .error, .cancel
     }
 
+    func handleOrderDidNotGet() {
+        // Handle case where order could not be fetched
+    }
+```
+
+Deprecated methods
+```swift
+extension YourViewController: PaymentDelegate {
     func handlePaymentResult(_ result: Result<SuccessfulDataModel, TransactionError>) {
         // Handle payment result (success or failure)
         // in `SuccessfulDataModel.orderStatus: OrderStatus`
@@ -149,10 +157,6 @@ extension YourViewController: PaymentDelegate {
 
     func handlePaymentCancel() {
         // Handle user cancellation
-    }
-
-    func handleOrderDidNotGet() {
-        // Handle case where order could not be fetched
     }
 }
 ```

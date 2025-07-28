@@ -48,7 +48,7 @@ final class SecurityCodeInputView: UIView {
     }()
 
     private let containerView: UIView = {
-        let view = UIView()
+        let view = ThemedInputContainerView()
         view.backgroundColor = UICustomization.Input.backgroundColor
         view.layer.cornerRadius = UICustomization.Input.cornerRadius
         view.layer.borderWidth = UICustomization.Input.borderWidth
@@ -216,11 +216,11 @@ extension SecurityCodeInputView: UITextFieldDelegate {
 // MARK: - SecurityCodeInputView + ShimmerableView
 
 extension SecurityCodeInputView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [titleLabel, containerView]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [titleLabel: .automatic]
     }
 }

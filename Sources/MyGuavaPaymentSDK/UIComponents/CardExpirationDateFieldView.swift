@@ -41,7 +41,7 @@ final class CardExpirationDateFieldView: UIView {
     }()
 
     private let containerView: UIView = {
-        let view = UIView()
+        let view = ThemedInputContainerView()
         view.backgroundColor = UICustomization.Input.backgroundColor
         view.layer.cornerRadius = UICustomization.Input.cornerRadius
         view.layer.borderWidth = UICustomization.Input.borderWidth
@@ -119,12 +119,12 @@ final class CardExpirationDateFieldView: UIView {
     }
 
     /// Shows shimmer loading
-    public func showLoading() {
+    func showLoading() {
         isLoading = true
     }
 
     /// Hides shimmer loading
-    public func hideLoading() {
+    func hideLoading() {
         isLoading = false
     }
 
@@ -163,11 +163,11 @@ extension CardExpirationDateFieldView: UITextFieldDelegate {
 // MARK: - CardExpirationDateFieldView + ShimmerableView
 
 extension CardExpirationDateFieldView: ShimmerableView {
-    public var shimmeringViews: [UIView] {
+    var shimmeringViews: [UIView] {
         [titleLabel, containerView]
     }
 
-    public var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
+    var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [titleLabel: .automatic]
     }
 }

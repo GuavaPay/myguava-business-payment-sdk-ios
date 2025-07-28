@@ -163,6 +163,10 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     }
 
     func showAvailableCardSchemes(_ icons: [UIImage]) {
+        paymentsImageStack.arrangedSubviews.forEach {
+            $0.removeFromSuperview()
+        }
+
         icons.forEach {
             let imageView = UIImageView(image: $0)
             imageView.contentMode = .scaleAspectFit
@@ -204,10 +208,23 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         disablePaymentCard()
         applePayButtonView.isUserInteractionEnabled = false
     }
-    
+
     func disableSaveCards() {
         savedCardsView.isHidden = true
         cardInformationView.isHidden = false
+    }
+
+    func hideSaveCards(_ isHidden: Bool) {
+        savedCardsView.setHidden(isHidden)
+        cardInformationView.isHidden = !isHidden
+    }
+
+    func setIsBindingAvailable(_ isBindingAvailable: Bool) {
+        cardInformationView.setSaveCardCheckboxVisible(isBindingAvailable)
+    }
+    
+    func hideCardholderInput() {
+        cardInformationView.hideCardholderInput()
     }
 
     private func configureViews() {
@@ -223,13 +240,22 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         cardInformationView.onScanButtonTapped = { [weak self] in
             self?.output?.didTapScanCard()
         }
-        
+        cardInformationView.onSaveCardTapped = { [weak self] needSaveCard in
+            self?.output?.didTapSaveNewCard(needSaveCard)
+        }
+        cardInformationView.onNewCardNameTextChange = { [weak self] text in
+            self?.output?.didChangeNewCardName(text)
+        }
+
         savedCardsView.onChangeSegmentControl = { [weak self] index in
+            let showSaveCards = index == 0
+            self?.hideSaveCards(!showSaveCards)
             self?.updatePreferredHeight()
+            self?.output?.didSelectSavedCards(showSaveCards)
         }
         
-        savedCardsView.onChangeDigits = { [weak self] digits in
-            self?.output?.didChangeCardNumber(digits: digits)
+        savedCardsView.onCVVCodeEndEditing = { [weak self] index, code in
+            self?.output?.didChangeSavedCardCVV(index, code: code)
         }
         
         savedCardsView.onFieldEndEditing = { [weak self] field in
@@ -252,8 +278,9 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
             bottomSpacer
         )
         
+        savedCardsView.isHidden = false
         cardInformationView.isHidden = true
-        
+
         stackView.setCustomSpacing(24, after: separatorView)
 
         containerView.addSubviews(
@@ -391,9 +418,7 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         containerViewBottomConstraint?.update(offset: 0)
         scrollView.isScrollEnabled = exceedsMaxHeight
 
-        UIView.animate(withDuration: 0.25) {
-            self.view.layoutIfNeeded()
-        }
+        self.view.layoutIfNeeded()
     }
 
     private func animatePresentContainer() {

@@ -7,7 +7,7 @@
 
 import UIKit
 
-public extension UIImage {
+extension UIImage {
 
     /// This initializer is required to generate an image of the specified color.
     /// It is actively used for customizing segmented controls
