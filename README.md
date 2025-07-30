@@ -147,20 +147,6 @@ extension YourViewController: PaymentDelegate {
     }
 ```
 
-Deprecated methods
-```swift
-extension YourViewController: PaymentDelegate {
-    func handlePaymentResult(_ result: Result<SuccessfulDataModel, TransactionError>) {
-        // Handle payment result (success or failure)
-        // in `SuccessfulDataModel.orderStatus: OrderStatus`
-    }
-
-    func handlePaymentCancel() {
-        // Handle user cancellation
-    }
-}
-```
-
 > **_NOTE_**:
 > - All payment method options (Payment Card, Apple Pay) are available by default.
 > - The set of available options can be customized via PaymentConfig if needed.
