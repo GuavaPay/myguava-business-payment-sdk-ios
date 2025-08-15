@@ -26,9 +26,9 @@ final class PaymentInteractor: PaymentInteractorInput {
 
 
     private let paymentWorker: PaymentWorker
-    private let orderListener: OrderStatusSocketWorker
+    private let orderStatusWorker: OrderStatusWorker
 
-    private let timeoutSeconds = TimeInterval(5 * 60)
+    private let timeoutSeconds: TimeInterval = 5 * 60
     private let requestorAppUrl = "https://google.com"
     private let sdkAvailableCardSchemes: [CardScheme] = [
         .visa,
@@ -80,14 +80,7 @@ final class PaymentInteractor: PaymentInteractorInput {
             sdkCardCategories: sdkAvailableCardProductCategories,
             config: config
         )
-        self.orderListener = OrderStatusSocketWorker(
-            orderId: config.orderId,
-            token: config.sessionToken,
-            queryItems: [
-                .init(name: "payment-requirements-included", value: "true"),
-                .init(name: "transactions-included", value: "true")
-            ]
-        )
+        self.orderStatusWorker = orderStatusWorker
 
         APIClient.shared.configure(
             environment: config.environment,
@@ -113,7 +106,7 @@ final class PaymentInteractor: PaymentInteractorInput {
 
                 if let apiError = error as? APIError {
                     switch apiError {
-                    case .httpError, .invalidURL:
+                    case .httpError, .invalidURL, .connectionFailed, .unknown:
                         shouldAttemptRetry = true
                     case .invalidResponse, .noData, .decodingError:
                         shouldAttemptRetry = false
@@ -131,64 +124,46 @@ final class PaymentInteractor: PaymentInteractorInput {
         }
     }
 
-    func pollOrderStatusUntilPaid(
-        delay: TimeInterval,
-        repeatCount: Int,
-        completion: @escaping (Result<GetOrder, Error>) -> Void
-    ) {
-        guard repeatCount > 0 else {
-            completion(.failure(APIError.noData))
-            return
-        }
-        orderService.getOrder(byId: config.orderId) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let response):
-                guard let model = response.model,
-                      let order = model.order else {
-                    completion(.failure(APIError.noData))
-                    return
-                }
-                if order.status == .paid {
-                    completion(.success(model))
-                    return
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    self.pollOrderStatusUntilPaid(delay: delay, repeatCount: repeatCount - 1, completion: completion)
-                }
-            case .failure:
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    self.pollOrderStatusUntilPaid(delay: delay, repeatCount: repeatCount - 1, completion: completion)
-                }
-            }
-        }
+    func listenOrderStatus() {
+        orderStatusWorker.fetchOrderStatus()
     }
 
-    func preCreatePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool) {
-        orderService.preCreatePayment(
+    func executePayment(
+        paymentMethod: PaymentMethodRequest,
+        newCardName: String?,
+        contactInfo: ContactInfo?,
+        saveCard: Bool
+    ) {
+        let bodyModel = getExecuteBody(
+            paymentMethod: paymentMethod,
+            newCardName: newCardName,
+            contactInfo: contactInfo,
+            saveCard: saveCard
+        )
+
+        guard let body = bodyModel.toDictionary() else {
+            SentryFacade.shared.capture(error: EncodingSentryError.requestBody)
+            return
+        }
+
+        orderService.executePayment(
             orderId: config.orderId,
-            body: getBody(
-                cardInfo: cardInfo,
-                bindingInfo: bindingInfo,
-                contactInfo: contactInfo,
-                saveCard: false
-            )
+            body: body
         ) { [weak self] result in
             switch result {
             case .success(let success):
                 switch success.statusCode {
+                case 200:
+                    self?.orderStatusWorker.fetchOrderStatusNow()
                 case 202:
-                    self?.messageVersion = success.model?.requirements.threedsSdkCreateTransaction.messageVersion
-                    self?.directoryServerID = success.model?.requirements.threedsSdkCreateTransaction.directoryServerID
-
-                case 204:
-                    print("204")
+                    self?.messageVersion = success.model?.requirements.threedsSdkCreateTransaction?.messageVersion
+                    self?.directoryServerID = success.model?.requirements.threedsSdkCreateTransaction?.directoryServerID
+                    self?.continuePayment(paymentMethod: paymentMethod, contactInfo: contactInfo)
                 default:
-                    print("default")
+                    SentryFacade.shared.capture(error: NetworkError.unexpectedSuccessCode(success.statusCode))
                 }
-                self?.executePayment(cardInfo: cardInfo, bindingInfo: bindingInfo, contactInfo: contactInfo, saveCard: saveCard)
             case .failure(let failure):
-                self?.output?.didNotPreCreateOrder(failure)
+                self?.output?.didNotExecutePayment(.unknown(failure))
             }
         }
     }
@@ -243,7 +218,8 @@ private extension PaymentInteractor {
             let paymentDTO = self.paymentWorker.buildPaymentDTO(
                 from: response,
                 bindings: bindings,
-                applePaySchemes: appleCardSchemes
+                applePaySchemes: appleCardSchemes,
+                disableCardholderNameField: config.disableCardholderNameInput
             )
             self.output?.didGetOrder(paymentDTO)
             self.payment = paymentDTO
@@ -321,14 +297,13 @@ private extension PaymentInteractor {
     func extractX5C(from acsSignedContent: String) -> [String]? {
         let header = acsSignedContent.decodeJWTHeader()
 
-        guard let x5c = header?["x5c"] as? [String] else {
-            print("x5c array not found in header")
-            return nil
-        }
-        return x5c
+        return header?["x5c"] as? [String]
     }
 
-    func executePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool) {
+    func continuePayment(
+        paymentMethod: PaymentMethodRequest,
+        contactInfo: ContactInfo?
+    ) {
         var packedSdkDataString: String?
         if let directoryServerID {
             let transaction = threeDS2Service.createTransaction(
@@ -343,50 +318,58 @@ private extension PaymentInteractor {
             guard
                 let packedSdkJsonData = try? JSONSerialization.data(withJSONObject: packedSdkDict, options: []),
                 let dataString = packedSdkJsonData.base64URLEncodedString() else {
-                assertionFailure("Failed to encode packedSdkData")
+                SentryFacade.shared.capture(error: EncodingSentryError.packedSdkData)
                 return
             }
             packedSdkDataString = dataString
         }
 
-        orderService.executePayment(
+        let bodyModel = ContinuePaymentRequest(
+            threedsSdkData: PackedAuthenticationData(packedAuthenticationData: packedSdkDataString),
+            payPalOrderApproveEvent: nil
+        )
+
+        guard let body = bodyModel.toDictionary() else {
+            SentryFacade.shared.capture(error: EncodingSentryError.requestBody)
+            return
+        }
+
+        orderService.continuePayment(
             orderId: config.orderId,
-            body: getBody(
-                cardInfo: cardInfo,
-                bindingInfo: bindingInfo,
-                contactInfo: contactInfo,
-                saveCard: saveCard,
-                packedSdkDataString: packedSdkDataString
-            )
+            body: body
         ) { [weak self] result in
             switch result {
             case .success(let success):
                 switch success.statusCode {
                 case 200:
-                    self?.startPollingOrderStatus()
+                    self?.orderStatusWorker.fetchOrderStatusNow()
                 case 202:
                     guard let model = success.model else {
                         return
                     }
                     self?.doPaymentChallenge(requirements: model)
+                case 204:
+                    break
                 default:
-                    print("default")
+                    SentryFacade.shared.capture(error: NetworkError.unexpectedSuccessCode(success.statusCode))
                 }
             case .failure(let error):
-                self?.output?.didExecutePayment(.error(.unknown(error)))
+                self?.output?.didContinuePayment(.error(.unknown(error)))
             }
         }
     }
 
     func doPaymentChallenge(requirements: ExecutePaymentRequirements) {
-        guard
-            let mainVC,
-            let packedSDK = requirements.requirements.threedsChallenge?.packedSdkChallengeParameters,
-            let challengeParameters = GPTDSChallengeParameters(
+        guard let mainVC else {
+            return
+        }
+
+        guard let packedSDK = requirements.requirements.threedsChallenge?.packedSdkChallengeParameters,
+              let challengeParameters = GPTDSChallengeParameters(
                 packedSDKString: packedSDK,
                 requestorAppURL: requestorAppUrl
-            ) else {
-            assertionFailure("Challenge data is invalid")
+              ) else {
+            SentryFacade.shared.capture(error: DataError.invalidChallengeRequirements)
             return
         }
 
@@ -394,7 +377,7 @@ private extension PaymentInteractor {
         // ! For test only !
         // Will be removed after certification and replaced with built-in ones
         guard let x5cArray = extractX5C(from: challengeParameters.acsSignedContent), !x5cArray.isEmpty else {
-            assertionFailure("x5cArray is empty")
+            SentryFacade.shared.capture(error: DataError.x5cCertificatesNotFound)
             return
         }
 
@@ -414,158 +397,39 @@ private extension PaymentInteractor {
         )
     }
 
-    func getBody(
-        cardInfo: CardInfo?,
-        bindingInfo: BindingInfo?,
+    func getExecuteBody(
+        paymentMethod: PaymentMethodRequest,
+        newCardName: String?,
         contactInfo: ContactInfo?,
         saveCard: Bool,
         packedSdkDataString: String? = nil
-    ) -> [String: Any] {
-        var body = [String: Any]()
-
-        if let cardInfo {
-            let paymentMethod: [String: Any] = [
-                "type": "PAYMENT_CARD",
-                "pan": cardInfo.number,
-                "cvv2": cardInfo.cvv,
-                "expiryDate": "\(cardInfo.expiryYear)\(cardInfo.expiryMonth)",
-                "cardholderName": cardInfo.holderName
-            ]
-
-            body["paymentMethod"] = paymentMethod
-
-            if saveCard {
-                body["bindingCreationIsNeeded"] = saveCard
-                body["bindingName"] = cardInfo.newCardName
-            }
-        }
-
-        if let bindingInfo {
-            let paymentMethod: [String: Any] = [
-                "type": "PAYMENT_CARD_BINDING",
-                "bindingId": bindingInfo.bindingId,
-                "cvv2": bindingInfo.cvv2
-            ]
-
-            body["paymentMethod"] = paymentMethod
-        }
-
+    ) -> ExecutePaymentRequest {
         let contactPhone = ContactPhone(
             countryCode: contactInfo?.countryCode.map { $0.replacingOccurrences(of: "+", with: "") },
             nationalNumber: contactInfo?.nationalNumber.map { $0.replacingOccurrences(of: " ", with: "") }
         )
-        let payer = Payer(
-            id: nil,
-            availableInputModes: nil,
-            firstName: nil,
-            lastName: nil,
-            dateOfBirth: nil,
-            contactEmail: contactInfo?.contactEmail ?? payment?.order?.payer?.contactEmail,
-            contactPhone: contactPhone ?? payment?.order?.payer?.contactPhone,
-            maskedFirstName: nil,
-            maskedLastName: nil,
-            maskedDateOfBirth: nil,
-            maskedContactEmail: nil,
-            maskedContactPhone: nil,
-            address: nil
+
+        return ExecutePaymentRequest(
+            paymentMethod: paymentMethod,
+            deviceData: DeviceDataRequest(
+                browserData: nil,
+                ip: nil,
+                threedsSdkData: ThreedsSdkData(packedAuthenticationData: packedSdkDataString)
+            ),
+            bindingCreationIsNeeded: saveCard,
+            bindingName: newCardName,
+            exchange: nil,
+            payer: PayerRequest(
+                inputMode: nil,
+                firstName: nil,
+                lastName: nil,
+                contactEmail: contactInfo?.contactEmail ?? payment?.order?.payer?.contactEmail,
+                contactPhone: contactPhone ?? payment?.order?.payer?.contactPhone,
+                address: nil
+            ),
+            challengeWindowSize: nil,
+            priorityRedirectUrl: nil
         )
-
-        let payerDict = payer.toDictionary()
-        body["payer"] = payerDict?.isEmpty == true ? nil : payerDict
-
-        body["deviceData"] = [
-            "threedsSdkData": [
-                "name": "iOS SDK",
-                "version": "1.0.0",
-                "packedAuthenticationData": packedSdkDataString
-            ]
-        ]
-
-        return body
-    }
-
-    func startPollingOrderStatus() {
-        orderListener.startListening { [weak self] result in
-            guard let self else { return }
-
-            guard case let .success(event) = result else {
-                self.fallbackToStatusPolling()
-                return
-            }
-
-            switch event.order.status {
-            case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
-                self.output?.stopLoading()
-                self.orderListener.stopListening()
-                self.output?.didExecutePayment(.success(.init(
-                    order: .init(
-                        id: event.order.id,
-                        status: event.order.status,
-                        referenceNumber: event.order.referenceNumber,
-                        amount: ResultDataModel.Amount(from: event.order.totalAmount)
-                    ),
-                    payment: .init(
-                        id: event.payment?.id,
-                        date: event.payment?.date,
-                        rrn: event.payment?.rrn,
-                        authCode: event.payment?.authCode,
-                        resultMessage: event.payment?.result?.message
-                    )
-                )))
-            case .declined, .cancelled, .expired:
-                self.output?.stopLoading()
-                self.orderListener.stopListening()
-                self.output?.didExecutePayment(.unsuccess(.init(
-                    order: .init(
-                        id: event.order.id,
-                        status: event.order.status,
-                        referenceNumber: event.order.referenceNumber,
-                        amount: ResultDataModel.Amount(from: event.order.totalAmount)
-                    ),
-                    payment: .init(
-                        id: event.payment?.id,
-                        date: event.payment?.date,
-                        rrn: event.payment?.rrn,
-                        authCode: event.payment?.authCode,
-                        resultMessage: event.payment?.result?.message
-                    )
-                )))
-            case .created:
-                break
-            }
-        }
-    }
-
-    // Fallback to polling getOrder endpoint on WebSocket connection error
-    func fallbackToStatusPolling() {
-        orderListener.stopListening()
-        pollOrderStatusUntilPaid(delay: 2.0, repeatCount: 5) { [weak self] pollResult in
-            guard let self = self else { return }
-            switch pollResult {
-            case .success(let response):
-                if let order = response.order, let status = order.status {
-                    self.output?.stopLoading()
-                    self.output?.didExecutePayment(.success(.init(
-                        order: .init(
-                            id: order.id,
-                            status: status,
-                            referenceNumber: order.referenceNumber,
-                            amount: ResultDataModel.Amount(from: order.totalAmount)
-                        ),
-                        payment: .init(
-                            id: response.payment?.id,
-                            date: response.payment?.date,
-                            rrn: response.payment?.rrn,
-                            authCode: response.payment?.authCode,
-                            resultMessage: response.payment?.result?.message
-                        )
-                    )))
-                }
-            case .failure(let error):
-                self.output?.stopLoading()
-                self.output?.didExecutePayment(.error(.unknown(error)))
-            }
-        }
     }
 }
 
@@ -612,7 +476,7 @@ private extension PaymentInteractor {
             let merchantCapabilities = self.getMerchantCapabilities(order.availableCardProductCategories)
             let displayName = response.model?.context.displayName ?? ""
             let merchantName = getOrder.merchant?.name ?? ""
-            
+
             let label = if !displayName.isEmpty {
                 displayName
             } else if !merchantName.isEmpty {
@@ -620,7 +484,7 @@ private extension PaymentInteractor {
             } else {
                 ""
             }
-            
+
             self.applePayManager.config = ApplePayConfig(
                 merchantIdentifier: merchantId,
                 countryCode: countryCode,
@@ -660,23 +524,76 @@ private extension PaymentInteractor {
 extension PaymentInteractor: PaymentStatusReceiverDelegate {
     func didCompleteChallenge(withSuccess: Bool) {
         print("Payment completed with: \(withSuccess)")
-        startPollingOrderStatus()
     }
 
     func didCancelChallenge() {
-        output?.didExecutePayment(.cancel)
+        output?.didContinuePayment(.cancel)
     }
 
     func didTimeoutChallenge() {
-        output?.didExecutePayment(.error(.timeout))
+        output?.didContinuePayment(.error(.timeout))
     }
 
     func didReceiveProtocolError(_ error: GPTDSProtocolErrorEvent) {
-        output?.didExecutePayment(.error(.protocolError(error)))
+        SentryFacade.shared.capture(error: ThreeDSError.protocolError(error))
+        output?.didContinuePayment(.error(.protocolError(error)))
     }
 
     func didReceiveRuntimeError(_ error: GPTDSRuntimeErrorEvent) {
-        output?.didExecutePayment(.error(.runtimeError(error)))
+        SentryFacade.shared.capture(error: ThreeDSError.runtimeError(error))
+        output?.didContinuePayment(.error(.runtimeError(error)))
+    }
+}
+
+// MARK: - OrderStatusWorkerDelegate
+
+extension PaymentInteractor: OrderStatusWorkerDelegate {
+    func didGetStatusUpdate(_ result: Result<PaymentOrderStatusEvent, OrderStatusError>) {
+        output?.stopLoading()
+
+        switch result {
+        case .success(let event):
+            guard let status = event.order.status else {
+                SentryFacade.shared.capture(error: DecodingSentryError.getOrderResponse)
+                output?.didContinuePayment(.error(.unknown(APIError.invalidResponse)))
+                return
+            }
+
+            let resultModel = ResultDataModel(
+                order: .init(
+                    id: event.order.id,
+                    status: status,
+                    referenceNumber: event.order.referenceNumber,
+                    amount: ResultDataModel.Amount(from: event.order.totalAmount)
+                ),
+                payment: .init(
+                    id: event.payment?.id,
+                    date: event.payment?.date,
+                    rrn: event.payment?.rrn,
+                    authCode: event.payment?.authCode,
+                    resultMessage: event.payment?.result?.message
+                )
+            )
+
+            switch status {
+            case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
+                orderStatusWorker.stopFetching()
+                output?.didContinuePayment(.success(resultModel))
+
+            case .declined, .cancelled, .expired:
+                orderStatusWorker.stopFetching()
+                output?.didContinuePayment(.unsuccess(resultModel))
+
+            case .created:
+                break
+            }
+
+        case .failure(let error):
+            orderStatusWorker.stopFetching()
+
+            SentryFacade.shared.capture(error: DataError.fetchOrderStatusFailed)
+            output?.didContinuePayment(.error(.unknown(error)))
+        }
     }
 }
 
@@ -687,61 +604,15 @@ extension PaymentInteractor: ApplePayManagerDelegate {
         switch result {
         case .success:
             output?.showLoading()
-            orderListener.startListening { [weak self] result in
-                guard let self else { return }
-
-                guard case let .success(event) = result else {
-                    self.fallbackToStatusPolling()
-                    return
-                }
-
-                switch event.order.status {
-                case .paid, .partiallyRefunded, .refunded, .recurrenceActive, .recurrenceClose:
-                    self.output?.stopLoading()
-                    self.orderListener.stopListening()
-                    self.output?.didExecutePayment(.success(.init(
-                        order: .init(
-                            id: event.order.id,
-                            status: event.order.status,
-                            referenceNumber: event.order.referenceNumber,
-                            amount: ResultDataModel.Amount(from: event.order.totalAmount)
-                        ),
-                        payment: .init(
-                            id: event.payment?.id,
-                            date: event.payment?.date,
-                            rrn: event.payment?.rrn,
-                            authCode: event.payment?.authCode,
-                            resultMessage: event.payment?.result?.message
-                        )
-                    )))
-                case .declined, .cancelled, .expired:
-                    self.output?.stopLoading()
-                    self.orderListener.stopListening()
-                    self.output?.didExecutePayment(.unsuccess(.init(
-                        order: .init(
-                            id: event.order.id,
-                            status: event.order.status,
-                            referenceNumber: event.order.referenceNumber,
-                            amount: ResultDataModel.Amount(from: event.order.totalAmount)
-                        ),
-                        payment: .init(
-                            id: event.payment?.id,
-                            date: event.payment?.date,
-                            rrn: event.payment?.rrn,
-                            authCode: event.payment?.authCode,
-                            resultMessage: event.payment?.result?.message
-                        )
-                    )))
-                case .created:
-                    break
-                }
-            }
+            listenOrderStatus()
         case .failure(let errorType):
             switch errorType {
             case .deviceNotSupported:
-                self.output?.didExecutePayment(.error(.applePayNotSupported))
+                SentryFacade.shared.capture(error: ApplePaySentryError.deviceNotSupported)
+                self.output?.didContinuePayment(.error(.applePayNotSupported))
             case .statusCode(let error):
-                self.output?.didExecutePayment(.error(.statusCode(error)))
+                SentryFacade.shared.capture(error: ApplePaySentryError.unexpectedStatusCode(error))
+                self.output?.didContinuePayment(.error(.statusCode(error)))
             default:
                 break
             }

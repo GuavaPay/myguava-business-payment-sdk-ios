@@ -28,30 +28,31 @@ final class PaymentWorker {
     func buildPaymentDTO(
         from order: GetOrder,
         bindings: [Binding],
-        applePaySchemes: [CardScheme]
+        applePaySchemes: [CardScheme],
+        disableCardholderNameField: Bool = false
     ) -> PaymentDTO {
         let availableCardSchemes = Set.intersectManyArray([
             order.order?.availableCardSchemes ?? [],
             sdkCardSchemes,
             config.availableCardSchemes.compactMap { $0.cardScheme }
         ])
-        
+
         let availablePaymentMethods = Set.intersectManyArray([
             order.order?.availablePaymentMethods ?? [],
             sdkPaymentMethods,
             config.availablePaymentMethods.compactMap { $0.orderMethod }
         ])
-        
+
         let availableCardCategories = Set.intersectManyArray([
             order.order?.availableCardProductCategories ?? [],
             sdkCardCategories,
             config.availableCardProductCategories.compactMap { $0.cardCategory }
         ])
-        
+
         let updatedBindings = bindings.compactMap { binding in
             var binding = binding
             let isValid: Bool
-            
+
             if let scheme = binding.cardData?.cardScheme,
                let category = binding.product?.category {
                 isValid = availableCardSchemes.contains(scheme) && availableCardCategories.contains(category)
@@ -72,7 +73,8 @@ final class PaymentWorker {
             availableAppleCardSchemes: applePaySchemes,
             availablePaymentMethods: availablePaymentMethods,
             availableCardCategories: availableCardCategories,
-            savedCards: savedCards
+            savedCards: savedCards,
+            disableCardholderNameField: disableCardholderNameField
         )
     }
 }

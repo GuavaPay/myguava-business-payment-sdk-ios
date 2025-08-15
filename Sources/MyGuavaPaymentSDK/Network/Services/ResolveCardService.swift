@@ -16,12 +16,15 @@ struct ResolveCardEndpoint: APIEndpoint {
 
 struct ResolveCardService {
     private let api: APIClient
-    
+
     init(api: APIClient = .shared) {
         self.api = api
     }
-    
-    func resolveCard(for cardNumber: String, completion: @escaping (Result<APIResponse<ResolveCard>, Error>) -> Void) {
+
+    func resolveCard(
+        for cardNumber: String,
+        completion: @escaping (Result<APIResponse<ResolveCard>, APIError>) -> Void
+    ) {
         let body: [String: Any] = ["rangeIncludes": cardNumber]
         api.performRequest(endpoint: ResolveCardEndpoint(body: body), completion: completion)
     }

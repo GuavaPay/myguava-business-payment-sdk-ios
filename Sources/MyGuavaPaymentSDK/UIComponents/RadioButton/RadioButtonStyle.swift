@@ -1,6 +1,6 @@
 //
 //  RadioButtonStyle.swift
-//  
+//
 //
 //  Created by Игнат Чегодайкин on 06.06.2024.
 //

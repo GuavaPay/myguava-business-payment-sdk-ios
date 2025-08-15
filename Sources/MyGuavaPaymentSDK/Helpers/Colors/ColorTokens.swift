@@ -299,7 +299,7 @@ extension UIColor: ColorProvider {
     public static var additional100: UIColor {
         UIColor(resource: ColorResource.Colors.Addtional._100)
     }
-    
+
     public static var alphaBlack100: UIColor {
         UIColor(resource: ColorResource.Colors.AlphaBlack._100)
     }

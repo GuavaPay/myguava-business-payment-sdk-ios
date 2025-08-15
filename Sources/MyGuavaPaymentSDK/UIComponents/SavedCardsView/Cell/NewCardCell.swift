@@ -36,16 +36,16 @@ final class NewCardCell: UITableViewCell {
             $0.directionalEdges.equalToSuperview()
         }
     }
-    
+
     private func bindActions() {
         cardInformationView.onSaveCardTapped = { [weak self] needSaveNewCard in
             self?.onSaveCardTapped?(needSaveNewCard)
         }
-        
+
         cardInformationView.cardNumberView.onChangeDigits = { [weak self] digits in
             self?.onChangeDigits?(digits)
         }
-        
+
         cardInformationView.onFieldEndEditing = { [weak self] field in
             self?.onFieldEndEditing?(field)
         }

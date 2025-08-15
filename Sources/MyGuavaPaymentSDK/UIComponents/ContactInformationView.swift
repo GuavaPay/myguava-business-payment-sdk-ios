@@ -11,6 +11,9 @@ import SnapKit
 final class ContactInformationView: ThemedInputContainerView {
     var onSelectPhoneCode: (() -> Void)?
     var onSaveButton: ((_ phoneNumber: String, _ email: String) -> Void)?
+    var onChangeInfo: ((_ editing: Bool) -> Void)?
+    var onChangeEmail: ((_ email: String) -> Void)?
+    var onChangePhoneNumber: ((_ number: String) -> Void)?
 
     private let containerStackView: UIStackView = {
         let stackView = UIStackView()
@@ -148,7 +151,10 @@ final class ContactInformationView: ThemedInputContainerView {
     }
 
     private var payer: Payer?
-    
+
+    private var email = ""
+    private var phoneNumber = ""
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupView()
@@ -237,15 +243,39 @@ final class ContactInformationView: ThemedInputContainerView {
         }
 
         cancelButtonView.setAction { [weak self] in
+            self?.resetFields()
             self?.setViewState(forChange: false)
+        }
+
+        emailFieldView.onChangeEmail = { [weak self] email in
+            self?.updateSaveButtonState()
+            self?.onChangeEmail?(email)
+            self?.email = email
+        }
+
+        phoneNumberFieldView.onChangePhoneNumber = { [weak self] number in
+            self?.updateSaveButtonState()
+            self?.onChangePhoneNumber?(number)
+            self?.phoneNumber = number
         }
 
         saveButtonView.setAction { [weak self] in
             guard let self else { return }
 
             setViewState(forChange: false)
-            onSaveButton?(phoneNumberFieldView.phoneNumber, emailFieldView.email)
+            onSaveButton?(phoneNumber, email)
         }
+    }
+
+    private func resetFields() {
+        phoneNumber = ""
+        email = ""
+        phoneNumberFieldView.setNumberToTextField("")
+        emailFieldView.setValue("")
+    }
+
+    private func updateSaveButtonState() {
+        saveButtonView.isHidden = email.isEmpty && phoneNumber.isEmpty
     }
 
     private func showShimmerIfNeeded() {
@@ -266,6 +296,7 @@ final class ContactInformationView: ThemedInputContainerView {
         changeInfoButton.isHidden = forChange
         emailСontainerStackView.isHidden = forChange
         phoneNumberСontainerStackView.isHidden = forChange
+        saveButtonView.isHidden = (forChange && phoneNumber.isEmpty && email.isEmpty)
 
         emailFieldView.isHidden = !forChange
         phoneNumberFieldsСontainerStackView.isHidden = !forChange
@@ -275,6 +306,8 @@ final class ContactInformationView: ThemedInputContainerView {
             phoneNumberFieldView.resignFirstResponder()
             emailFieldView.resignFirstResponder()
         }
+
+        onChangeInfo?(forChange)
     }
 
     func configureSelectCountry(_ country: CountryResponse) {

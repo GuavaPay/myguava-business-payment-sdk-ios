@@ -32,7 +32,6 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     private let applePayButtonView = ApplePayButtonView()
     private let cardInformationView = CardInformationView()
     private let separatorView = SeparatorWithTextView()
-    private let expirationDateView = SecurityCodeInputView()
 
     private let dimmedView: UIView = {
         let view = UIView()
@@ -103,8 +102,8 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         bindActions()
         setupKeyboardObservers()
         output?.viewDidLoad()
-        
     }
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -185,10 +184,14 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         }
     }
 
+    func setSecurityCodeLength(_ length: Int) {
+        cardInformationView.setSecurityCodeLength(length)
+    }
+
     func configureSaveCards(_ saveCards: [SavedCardsView.Section : [[SavedCardsCellKind]]]) {
         savedCardsView.setCardsData(saveCards)
     }
-    
+
     func selectSegmentControl(index: Int) {
         savedCardsView.setSelectedSegment(index: index)
     }
@@ -222,9 +225,13 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     func setIsBindingAvailable(_ isBindingAvailable: Bool) {
         cardInformationView.setSaveCardCheckboxVisible(isBindingAvailable)
     }
-    
+
     func hideCardholderInput() {
         cardInformationView.hideCardholderInput()
+    }
+
+    func nextActiveInputIfAvailable() {
+        cardInformationView.nextActiveInputIfAvailable()
     }
 
     private func configureViews() {
@@ -253,11 +260,11 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
             self?.updatePreferredHeight()
             self?.output?.didSelectSavedCards(showSaveCards)
         }
-        
+
         savedCardsView.onCVVCodeEndEditing = { [weak self] index, code in
             self?.output?.didChangeSavedCardCVV(index, code: code)
         }
-        
+
         savedCardsView.onFieldEndEditing = { [weak self] field in
             self?.output?.didEndEditing(field: field)
         }
@@ -277,7 +284,7 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
             paymentsImageContainer,
             bottomSpacer
         )
-        
+
         savedCardsView.isHidden = false
         cardInformationView.isHidden = true
 
@@ -365,6 +372,10 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
         confirmButtonView.setAction { [weak self] in
             self?.output?.didTapConfirmButton()
         }
+
+        contactInformationView.onChangeInfo = { [weak self] editing in
+            self?.output?.didTapChangeInfo(editing: editing)
+        }
     }
 
     private func setupKeyboardObservers() {
@@ -399,7 +410,7 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     private func handleDismissView() {
         // Need for correct update layout height
         isFirstShow = true
-        output?.didCloseView()
+        output?.didCloseViewByUser()
         animateDismissView()
     }
 

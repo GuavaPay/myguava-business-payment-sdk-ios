@@ -1,13 +1,13 @@
 {
-  "originHash" : "5a6641502027437edb2e85b9882fe9835b386a6295613b8d915d8f0580ad56bd",
+  "originHash" : "ac31550eca0e56d0d88fddb11cd49168aaf0c865693a82e4edab54790bf421ed",
   "pins" : [
     {
       "identity" : "guavapay3ds2",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/GuavaPay/Guavapay3DS2",
       "state" : {
-        "revision" : "cc061aa337513a9cedc50f1f050b09d55798d6e4",
-        "version" : "0.0.3"
+        "revision" : "4efb388f7436ceb106bf6a95ea4ac10993235c30",
+        "version" : "0.0.6"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher.git",
       "state" : {
-        "revision" : "ef40458c27ccc65aec62c0cc65da296e07264ffd",
-        "version" : "8.4.0"
+        "revision" : "2015fda791daa72c8058619545a593bf8c1dd59f",
+        "version" : "8.5.0"
       }
     },
     {
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "c107075aa8d394be7aced273a46e944afe8b321b",
         "version" : "3.8.0"
+      }
+    },
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa",
+      "state" : {
+        "revision" : "156495496cb101e2f0a6b059f12dafcff1912197",
+        "version" : "8.54.0"
       }
     },
     {

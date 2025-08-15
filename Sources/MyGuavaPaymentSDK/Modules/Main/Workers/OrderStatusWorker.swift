@@ -2,104 +2,86 @@
 //  OrderStatusWorker.swift
 //  MyGuavaPaymentSDK
 //
-//  Created by Said Kagirov on 03.07.2025.
+//  Created by Nikolai Kriuchkov on 29.07.2025.
 //
 
 import Foundation
 
-final class OrderStatusWorker {
-    
-    private let orderService: OrderService
-    private var currentWorkItem: DispatchWorkItem?
-    
-    init(orderService: OrderService) {
-        self.orderService = orderService
-    }
-    
-    func startPolling(
-        orderId: String,
-        delay: TimeInterval,
-        repeatCount: Int,
-        completion: @escaping (Result<GetOrder, OrderStatusError>) -> Void
-    ) {
-        poll(
-            orderId: orderId,
-            delay: delay,
-            repeatCount: repeatCount,
-            completion: completion
-        )
-    }
-    
-    func cancel() {
-        currentWorkItem?.cancel()
-        currentWorkItem = nil
-    }
+protocol OrderStatusWorkerDelegate: AnyObject {
+    func didGetStatusUpdate(_ result: Result<PaymentOrderStatusEvent, OrderStatusError>)
 }
 
-// MARK: - Private
+final class OrderStatusWorker {
+    weak var delegate: OrderStatusWorkerDelegate?
 
-private extension OrderStatusWorker {
-    func poll(
-        orderId: String,
-        delay: TimeInterval,
-        repeatCount: Int,
-        completion: @escaping (Result<GetOrder, OrderStatusError>) -> Void
-    ) {
-        guard repeatCount > 0 else {
-            completion(.failure(OrderStatusError.timeout))
-            return
-        }
-        
-        orderService.getOrder(byId: orderId) { [weak self] result in
-            guard let self else { return }
-            
+    private let pollingWorker: OrderStatusPoolingWorkerProtocol
+    private let socketWorker: OrderStatusSocketWorkerProtocol
+    private let socketReconnectInterval: TimeInterval = 30
+
+    private var socketReconnectWorkItem: DispatchWorkItem?
+
+    init(pollingWorker: OrderStatusPoolingWorkerProtocol, socketWorker: OrderStatusSocketWorkerProtocol) {
+        self.pollingWorker = pollingWorker
+        self.socketWorker = socketWorker
+    }
+
+    func fetchOrderStatus() {
+        fetchWithSocket()
+    }
+
+    /// When socket is connected just continue.
+    /// If it is not connected - restart polling with shorter delay interval
+    func fetchOrderStatusNow() {
+        guard !socketWorker.isConnected else { return }
+
+        cancelPolling()
+        fetchWithPolling(needFastPolling: true)
+    }
+
+    func stopFetching() {
+        pollingWorker.cancel()
+        socketWorker.stopListening()
+    }
+
+    private func fetchWithSocket() {
+        socketWorker.startListening { [weak self] result in
             switch result {
-            case .success(let response):
-                guard let model = response.model,
-                        let order = model.order else {
-                    completion(.failure(.unknown(nil)))
-                    return
-                }
-                
-                switch order.status {
-                case .paid, .declined, .cancelled, .expired:
-                    completion(.success(model))
-                case .created:
-                    self.scheduleNext(
-                        orderId: orderId,
-                        delay: delay,
-                        repeatCount: repeatCount - 1,
-                        completion: completion
-                    )
-                default:
-                    completion(.failure(.unknown(nil)))
-                }
+            case .success(let event):
+                self?.delegate?.didGetStatusUpdate(.success(event))
             case .failure:
-                self.scheduleNext(
-                    orderId: orderId,
-                    delay: delay,
-                    repeatCount: repeatCount - 1,
-                    completion: completion
-                )
+                self?.scheduleSocketReconnect()
+                self?.fetchWithPolling()
             }
         }
     }
-    
-    func scheduleNext(
-        orderId: String,
-        delay: TimeInterval,
-        repeatCount: Int,
-        completion: @escaping (Result<GetOrder, OrderStatusError>) -> Void
-    ) {
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.poll(
-                orderId: orderId,
-                delay: delay,
-                repeatCount: repeatCount,
-                completion: completion
-            )
+
+    private func fetchWithPolling(needFastPolling: Bool = false) {
+        pollingWorker.startPolling(needFastPolling: needFastPolling) { [weak self] result in
+            switch result {
+            case .success(let event):
+                self?.delegate?.didGetStatusUpdate(.success(event))
+            case .failure(let error):
+                self?.cancelSocketReconnect()
+                self?.delegate?.didGetStatusUpdate(.failure(error))
+            }
         }
-        currentWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func scheduleSocketReconnect() {
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.cancelPolling()
+            self?.fetchWithSocket()
+        }
+        socketReconnectWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + socketReconnectInterval, execute: workItem)
+    }
+
+    private func cancelSocketReconnect() {
+        socketReconnectWorkItem?.cancel()
+        socketReconnectWorkItem = nil
+    }
+
+    private func cancelPolling() {
+        pollingWorker.cancel()
     }
 }

@@ -19,38 +19,38 @@ struct GetOrderEndpoint: APIEndpoint {
     }
 }
 
-struct PreCreatePaymentEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .put
-    let queryItems: [URLQueryItem]? = nil
-    let body: [String: Any]?
-
-    init(orderId: String, body: [String: Any]) {
-        self.path = "order/\(orderId)/payment"
-        self.body = body
-    }
-}
-
 struct ExecutePaymentEndpoint: APIEndpoint {
     let path: String
     let method: HTTPMethod = .post
     let queryItems: [URLQueryItem]? = nil
     let body: [String: Any]?
-    
+
     init(orderId: String, body: [String: Any]) {
         self.path = "order/\(orderId)/payment/execute"
         self.body = body
     }
 }
 
+struct ContinuePaymentEndpoint: APIEndpoint {
+    let path: String
+    let method: HTTPMethod = .post
+    let queryItems: [URLQueryItem]? = nil
+    let body: [String: Any]?
+
+    init(orderId: String, body: [String: Any]) {
+        self.path = "order/\(orderId)/payment/continue"
+        self.body = body
+    }
+}
+
 struct OrderService {
     private let api: APIClient
-    
+
     init(api: APIClient = .shared) {
         self.api = api
     }
-    
-    func getOrder(byId orderId: String, completion: @escaping (Result<APIResponse<GetOrder>, Error>) -> Void) {
+
+    func getOrder(byId orderId: String, completion: @escaping (Result<APIResponse<GetOrder>, APIError>) -> Void) {
         let endpoint = GetOrderEndpoint(orderId: orderId, queryItems: [
             .init(name: "merchant-included", value: "true"),
             .init(name: "transactions-included", value: "true")
@@ -58,28 +58,28 @@ struct OrderService {
         api.performRequest(endpoint: endpoint, completion: completion)
     }
 
-    func preCreatePayment(
-        orderId: String,
-        body: [String: Any],
-        completion: @escaping (Result<APIResponse<PreCreatePayment>, Error>) -> Void
-    ) {
-        api.performRequest(
-            endpoint: PreCreatePaymentEndpoint(orderId: orderId, body: body),
-            responseModel: PreCreatePayment.self,
-            acceptEmptyResponseCodes: [204],
-            completion: completion
-        )
-    }
-
     func executePayment(
         orderId: String,
         body: [String: Any],
-        completion: @escaping (Result<APIResponse<ExecutePaymentRequirements>, Error>) -> Void
+        completion: @escaping (Result<APIResponse<ExecutePaymentRequirements>, APIError>) -> Void
     ) {
         api.performRequest(
             endpoint: ExecutePaymentEndpoint(orderId: orderId, body: body),
             responseModel: ExecutePaymentRequirements.self,
             acceptEmptyResponseCodes: [200],
+            completion: completion
+        )
+    }
+
+    func continuePayment(
+        orderId: String,
+        body: [String: Any],
+        completion: @escaping (Result<APIResponse<ExecutePaymentRequirements>, APIError>) -> Void
+    ) {
+        api.performRequest(
+            endpoint: ContinuePaymentEndpoint(orderId: orderId, body: body),
+            responseModel: ExecutePaymentRequirements.self,
+            acceptEmptyResponseCodes: [200, 204],
             completion: completion
         )
     }

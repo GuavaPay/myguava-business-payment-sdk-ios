@@ -23,7 +23,6 @@ final class CardExpirationDateFieldView: UIView {
 
     private lazy var textField: UITextField = {
         let textField = UITextField()
-        textField.addKeyboardDoneToToolbar()
         textField.delegate = self
         textField.attributedPlaceholder = NSAttributedString(
             string: "MM/YY",
@@ -103,11 +102,11 @@ final class CardExpirationDateFieldView: UIView {
             textField.text = formatter.string(from: date)
         }
     }
-    
+
     func disable() {
         textField.isEnabled = false
     }
-    
+
     private func showShimmerIfNeeded() {
         if isLoading {
             containerView.layer.borderWidth = 0
@@ -140,22 +139,74 @@ final class CardExpirationDateFieldView: UIView {
 
 extension CardExpirationDateFieldView: UITextFieldDelegate {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        guard let text = textField.text, let range = Range(range, in: text) else { return false }
-        let newText = text.replacingCharacters(in: range, with: string)
-            .replacingOccurrences(of: "/", with: "")
-            .replacingOccurrences(of: "\\D", with: "", options: .regularExpression)
+        guard let currentText = textField.text,
+              let textRange = Range(range, in: currentText) else { return false }
 
-        let trimmed = String(newText.prefix(4))
-        var result = ""
+        let isDeleting = string.isEmpty
+        let updatedText = currentText.replacingCharacters(in: textRange, with: string)
+        let digitsOnly = updatedText.replacingOccurrences(of: "\\D", with: "", options: .regularExpression)
+        let limitedText = String(digitsOnly.prefix(4))
 
-        if trimmed.count >= 2 {
-            let index = trimmed.index(trimmed.startIndex, offsetBy: 2)
-            result = String(trimmed[..<index]) + "/" + String(trimmed[index...])
-        } else {
-            result = trimmed
+        if isDeleting {
+            if currentText.count == 3, range.location == 2 {
+                textField.text = String(limitedText.prefix(1))
+            } else {
+                if limitedText.count <= 2 {
+                    textField.text = limitedText
+                } else {
+                    let month = limitedText.prefix(2)
+                    let year = limitedText.suffix(from: limitedText.index(limitedText.startIndex, offsetBy: 2))
+                    textField.text = "\(month)/\(year)"
+                }
+            }
+            return false
         }
 
-        textField.text = result
+        if digitsOnly.count == 1 {
+            if string != "0" && string != "1" {
+                return false
+            }
+        }
+
+        if digitsOnly.count == 2 {
+            let first = digitsOnly.prefix(1)
+            let second = digitsOnly.suffix(1)
+
+            if first == "0", !"123456789".contains(second) {
+                return false
+            }
+            if first == "1", !"012".contains(second) {
+                return false
+            }
+        }
+
+        if digitsOnly.count == 3, string == "0" {
+            return false
+        }
+
+        if digitsOnly.count == 4 {
+            let yearString = String(digitsOnly.suffix(2))
+            if yearString.first == "0" {
+                return false
+            }
+        }
+
+        var formattedText = ""
+        if limitedText.count <= 2 {
+            formattedText = limitedText
+        } else {
+            let month = limitedText.prefix(2)
+            let year = limitedText.suffix(from: limitedText.index(limitedText.startIndex, offsetBy: 2))
+            formattedText = "\(month)/\(year)"
+        }
+
+        textField.text = formattedText
+
+        // Trigger end-editing callback when fully filled (length 5: "MM/YY")
+        if formattedText.count == 5 {
+            self.textEditingDidEnd()
+        }
+
         return false
     }
 }
@@ -169,5 +220,13 @@ extension CardExpirationDateFieldView: ShimmerableView {
 
     var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [titleLabel: .automatic]
+    }
+}
+
+// MARK: - CardExpirationDateFieldView + KeyboardToolbarable
+
+extension CardExpirationDateFieldView: KeyboardToolbarable {
+    var firstResponderInput: UITextField {
+        textField
     }
 }

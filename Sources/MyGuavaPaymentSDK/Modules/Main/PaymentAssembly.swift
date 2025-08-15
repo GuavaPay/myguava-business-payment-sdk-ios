@@ -84,13 +84,16 @@ public protocol PaymentDelegate: AnyObject {
     /// - Parameter result: A `Result` containing either a successful `ResultDataModel` or an `OrderStatusError`.
     @available(*, deprecated: 0.0.6, message: "Use handlePaymentResult(_ result: PaymentStatus) instead.")
     func handlePaymentResult(_ result: Result<ResultDataModel, OrderStatusError>)
+
     /// Called when the user cancels the payment flow before any processing has occurred.
     @available(*, deprecated: 0.0.6, message: "Use handlePaymentResult(_ result: PaymentStatus) instead. In PaymentStatus enum will pass 'cancel' case")
     func handlePaymentCancel()
+
     /// Called when the payment process finishes, either successfully or with an error.
     ///
     /// - Parameter result: A `PaymentStatus` value representing the final status of the payment. This can indicate success, failure, or other terminal states.
     func handlePaymentResult(_ result: PaymentStatus)
+
     /// Called when the payment module is initialized but the order data could not be retrieved from the backend (e.g. due to a network error or invalid session).
     func handleOrderDidNotGet()
 }
@@ -202,7 +205,24 @@ public final class PaymentAssembly {
     ///   - delegate: The object that handles payment results, conforming to `PaymentDelegate`.
     /// - Returns: A ready-to-use `UIViewController` for the payment flow.
     public static func assemble(_ config: PaymentConfig, _ delegate: PaymentDelegate?) -> UIViewController {
+        SentryFacade.shared.startSession(environment: config.environment, assertOnErrors: false)
+
         let orderService = OrderService()
+
+        let pollingWorker = OrderStatusPollingWorker(
+            orderService: orderService,
+            orderId: config.orderId
+        )
+        let socketWorker = OrderStatusSocketWorker(
+            orderId: config.orderId,
+            token: config.sessionToken,
+            queryItems: [
+                .init(name: "payment-requirements-included", value: "true"),
+                .init(name: "transactions-included", value: "true")
+            ]
+        )
+        let orderStatusWorker = OrderStatusWorker(pollingWorker: pollingWorker, socketWorker: socketWorker)
+
         let applePayManager = ApplePayManager(orderService: orderService, orderId: config.orderId)
         let statusReceiver = PaymentStatusReceiver()
 
@@ -217,7 +237,7 @@ public final class PaymentAssembly {
             applePayService: ApplePayService(),
             bindingService: BindingsService(),
             resolveCardService: ResolveCardService(),
-            orderStatusWorker: OrderStatusWorker(orderService: orderService)
+            orderStatusWorker: orderStatusWorker
         )
         let viewController = PaymentViewController()
         let router = PaymentRouter(view: viewController)
@@ -232,6 +252,7 @@ public final class PaymentAssembly {
         interactor.output = presenter
         applePayManager.delegate = interactor
         statusReceiver.delegate = interactor
+        orderStatusWorker.delegate = interactor
         interactor.mainVC = viewController
 
         return viewController

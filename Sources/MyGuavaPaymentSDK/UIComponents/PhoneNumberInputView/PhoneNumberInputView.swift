@@ -13,13 +13,14 @@ final class PhoneNumberInputView: UIView {
     /// Callback when validation of text input was triggered
     var onPhoneValidationChange: ((Bool) -> Void)?
 
-    /// The phone number that the user entered into the input field
-    var phoneNumber = ""
-
     /// Used to format input text, defaults to PhoneNumberTextProcessor
     let phoneTextProcessor: PhoneNumberTextProcessor
     /// Input field for entering a phone number
     let inputField = InputField(state: .enabled, placeholderText: "Phone number")
+
+    var onChangePhoneNumber: ((_ number: String) -> Void)?
+
+    private var phoneNumber = ""
 
     /// Initializer
     /// - Parameter phoneTextProcessor: textProcessor of phone number for formating and validatin text from textfield
@@ -128,6 +129,7 @@ final class PhoneNumberInputView: UIView {
 
         phoneTextProcessor.didChangeText = { [weak self] text in
             self?.phoneNumber = text
+            self?.onChangePhoneNumber?(text)
         }
     }
 

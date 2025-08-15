@@ -8,7 +8,8 @@
 import UIKit
 
 final class EmailFieldView: UIView {
-    var email: String = ""
+
+    var onChangeEmail: ((_ email: String) -> Void)?
 
     private let containerStackView: UIStackView = {
         let stackView = UIStackView()
@@ -47,12 +48,11 @@ final class EmailFieldView: UIView {
         }
 
         inputField.didChangeText = { [weak self] text in
-            self?.email = text
+            self?.onChangeEmail?(text)
         }
+
         inputField.autoCorrectionType = .no
         inputField.autocapitalizationType = .none
-
-        inputField.didShouldReturn
     }
 
     func configureValidEmailField(_ isValid: Bool) {

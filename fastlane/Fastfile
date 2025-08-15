@@ -1,0 +1,87 @@
+require 'json'
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    ENV["LC_ALL"]  = "en_US.UTF-8"
+    ENV["LANG"]    = "en_US.UTF-8"
+    ENV["LC_CTYPE"]= "en_US.UTF-8"
+    ENV["RUBYOPT"] = "-EUTF-8:UTF-8"
+
+    @scheme = ENV["PACKAGE_SCHEME"] || "MyGuavaPaymentSDK"
+    # Resolve destination: prefer UDID; allow forcing generic; otherwise auto-pick an available iPhone simulator by UDID
+    if ENV["FORCE_GENERIC_DESTINATION"] == "1"
+      @destination = "generic/platform=iOS Simulator"
+    elsif ENV["SIMULATOR_UDID"] && !ENV["SIMULATOR_UDID"].empty?
+      @destination = "platform=iOS Simulator,id=#{ENV["SIMULATOR_UDID"]}"
+    else
+      preferred_names = if ENV["SIMULATOR_NAME"] && !ENV["SIMULATOR_NAME"].empty?
+                           [ENV["SIMULATOR_NAME"]]
+                         else
+                           ["iPhone 16", "iPhone 16 Plus", "iPhone SE (3rd generation)", "iPhone 11 Pro"]
+                         end
+      begin
+        json = sh("xcrun simctl list --json devices available", log: false)
+        data = JSON.parse(json)
+        devices = data["devices"].values.flatten.select { |d| d["isAvailable"] && d["name"].include?("iPhone") }
+        booted = devices.find { |d| d["state"] == "Booted" }
+        candidate = devices.find { |d| preferred_names.include?(d["name"]) }
+        candidate ||= booted
+        candidate ||= devices.first
+        if candidate
+          @destination = "platform=iOS Simulator,id=#{candidate["udid"]}"
+        else
+          UI.user_error!("No available iOS Simulator devices found. Open Xcode > Settings > Platforms and install an iOS simulator.")
+        end
+      rescue => e
+        UI.important("Failed to auto-detect simulator (#{e}). Falling back to generic iOS Simulator for build-only.")
+        @destination = "generic/platform=iOS Simulator"
+      end
+    end
+
+    UI.message("Fastlane: scheme=#{@scheme}, destination=#{@destination}")
+
+    # SPM package: run xcodebuild from the package root (one level up from fastlane/)
+    @package_root = File.expand_path("..", __dir__)
+
+    # Ensure build folder exists for result bundles/logs under fastlane/
+    FileUtils.mkdir_p("build")
+  end
+
+  desc "Build SDK"
+  lane :build_sdk do
+    Dir.chdir(@package_root) do
+      # Ensure result bundle path is clean (xcodebuild fails if it already exists)
+      result_bundle = File.expand_path("fastlane/build/build.xcresult", @package_root)
+      FileUtils.rm_rf(result_bundle)
+
+      sh "set -o pipefail && xcodebuild build " \
+         "-scheme '#{@scheme}' " \
+         "-destination '#{@destination}' " \
+         "-skipPackagePluginValidation -skipMacroValidation " \
+         "-resultBundlePath fastlane/build/build.xcresult"
+    end
+  end
+
+  desc "Run tests"
+  lane :test_sdk do
+    Dir.chdir(@package_root) do
+      # Ensure test result bundle and log are clean
+      test_result_bundle = File.expand_path("fastlane/build/test.xcresult", @package_root)
+      test_log = File.expand_path("fastlane/build/xcodebuild-test.log", @package_root)
+      FileUtils.rm_rf(test_result_bundle)
+      FileUtils.rm_f(test_log)
+
+      sh "set -o pipefail && xcodebuild test " \
+         "-scheme '#{@scheme}' " \
+         "-destination '#{@destination}' " \
+         "-skipPackagePluginValidation -skipMacroValidation " \
+         "-resultBundlePath fastlane/build/test.xcresult | tee fastlane/build/xcodebuild-test.log"
+    end
+  end
+
+  after_all do
+    sh "rm -rf ~/Library/Developer/Xcode/DerivedData/* || true"
+    sh "rm -rf ~/Library/Developer/Xcode/Archives/* || true"
+  end
+end

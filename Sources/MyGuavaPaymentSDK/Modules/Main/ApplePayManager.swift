@@ -22,21 +22,21 @@ protocol ApplePayManagerDelegate: AnyObject {
 }
 
 final class ApplePayManager: NSObject {
-    
+
     private let orderService: OrderService
     private let orderId: String
-    
+
     weak var delegate: ApplePayManagerDelegate?
     var config: ApplePayConfig?
-    
+
     // сюда сохраняем результат
     private var paymentResult: Result<Void, ApplePayError>?
-    
+
     init(orderService: OrderService, orderId: String) {
         self.orderService = orderService
         self.orderId = orderId
     }
-    
+
     func pay() {
         guard
             let supportedNetworks = config?.supportedNetworks,
@@ -46,7 +46,7 @@ final class ApplePayManager: NSObject {
             delegate?.didAuthorizePayment(result: .failure(.deviceNotSupported))
             return
         }
-        
+
         let request = PKPaymentRequest()
         request.merchantIdentifier = config.merchantIdentifier
         request.countryCode = config.countryCode
@@ -54,7 +54,7 @@ final class ApplePayManager: NSObject {
         request.supportedNetworks = config.supportedNetworks
         request.merchantCapabilities = PKMerchantCapability(config.merchantCapabilities)
         request.paymentSummaryItems = config.paymentSummaryItems
-        
+
         let controller = PKPaymentAuthorizationController(paymentRequest: request)
         controller.delegate = self
         controller.present(completion: nil)
@@ -67,14 +67,14 @@ private extension ApplePayManager {
     func canMakePayments(_ supportedNetworks: [PKPaymentNetwork]) -> Bool {
         PKPaymentAuthorizationController.canMakePayments(usingNetworks: supportedNetworks)
     }
-    
+
     func makeApplePayBody(from payment: PKPayment) -> [String: Any]? {
         guard
             let tokenObject = try? JSONSerialization.jsonObject(with: payment.token.paymentData, options: []) as? [String: Any]
         else {
             return nil
         }
-        
+
         let paymentMethodInfo: [String: Any] = [
             "displayName": payment.token.paymentMethod.displayName ?? "",
             "network": payment.token.paymentMethod.network?.rawValue ?? "",
@@ -88,13 +88,13 @@ private extension ApplePayManager {
                 }
             }()
         ]
-        
+
         let paymentDict: [String: Any] = [
             "paymentData": tokenObject,
             "paymentMethod": paymentMethodInfo,
             "transactionIdentifier": payment.token.transactionIdentifier
         ]
-        
+
         let result: [String: Any] = [
             "paymentMethod": [
                 "type": "APPLE_PAY",
@@ -109,7 +109,7 @@ private extension ApplePayManager {
                 ]
             ]
         ]
-        
+
         return result
     }
 }
@@ -117,7 +117,7 @@ private extension ApplePayManager {
 // MARK: - PKPaymentAuthorizationControllerDelegate
 
 extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
-    
+
     func paymentAuthorizationController(
         _ controller: PKPaymentAuthorizationController,
         didAuthorizePayment payment: PKPayment,
@@ -128,7 +128,7 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
             body: makeApplePayBody(from: payment) ?? [:]
         ) { [weak self] result in
             guard let self else { return }
-            
+
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
@@ -146,7 +146,7 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
             }
         }
     }
-    
+
     func paymentAuthorizationControllerDidFinish(_ controller: PKPaymentAuthorizationController) {
         controller.dismiss { [weak self] in
             guard let self else { return }

@@ -261,7 +261,7 @@ final class CardCell: UITableViewCell {
     private func updateSelection(_ isSelected: Bool) {
         radioButton.onChecked = isSelected
         if !isEdit {
-                securityCodeInputIsHidden = !isSelected
+            securityCodeInputIsHidden = !isSelected
         } else {
             securityCodeInputIsHidden = true
         }
@@ -270,7 +270,7 @@ final class CardCell: UITableViewCell {
         cardInfoContainerStack.layer.borderColor = isSelected
         ? UICustomization.SelectItem.accentColor.cgColor
         : UIColor.border.primary.cgColor
-      }
+    }
 
     private func updateEditLayout(isHidden: Bool) {
         guard moreButton.isEnabled else {

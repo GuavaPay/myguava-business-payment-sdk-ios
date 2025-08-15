@@ -24,7 +24,6 @@ final class CardNumberFieldView: UIView {
 
     private lazy var textField: UITextField = {
         let textField = UITextField()
-        textField.addKeyboardDoneToToolbar()
         textField.delegate = self
         textField.attributedPlaceholder = NSAttributedString(
             string: "0000 0000 0000 0000",
@@ -84,7 +83,7 @@ final class CardNumberFieldView: UIView {
         stackView.spacing = 4
         return stackView
     }()
-    
+
     private var isShowingError: Bool = false
 
     private(set) var isLoading: Bool = false {
@@ -100,7 +99,7 @@ final class CardNumberFieldView: UIView {
     var onChangeDigits: ((String) -> Void)?
     var onEndEditing: ((String) -> Void)?
     var onScanButtonTapped: (() -> Void)?
-    
+
     private var isCardRecognized: Bool = false
 
     // MARK: - Init
@@ -216,14 +215,14 @@ private extension CardNumberFieldView {
         if textField.text != formatted {
             textField.text = formatted
         }
-        
+
         if digits.isEmpty {
             creditCardImageView.isHidden = true
             isCardRecognized = false
         } else {
             creditCardImageView.isHidden = !isCardRecognized
         }
-        
+
         if digits.count >= 6 {
             binDebouncer.start { [weak self] in
                 self?.onChangeDigits?(digits)
@@ -283,6 +282,12 @@ extension CardNumberFieldView: UITextFieldDelegate {
         let digits = updatedText.replacingOccurrences(of: "\\D", with: "", options: .regularExpression)
         textField.text = formatCardNumber(String(digits.prefix(19)))
         textDidChange()
+        
+        // Trigger end-editing callback when filled and Luhn is valid
+        if digits.count >= 16, CCValidator.validate(cardNumber: digits) {
+            self.textEditingDidEnd()
+        }
+
         return false
     }
 }
@@ -296,5 +301,13 @@ extension CardNumberFieldView: ShimmerableView {
 
     var shimmeringViewsCornerRadius: [UIView: ShimmerableViewConfiguration.ViewCornerRadius] {
         [titleLabel: .automatic]
+    }
+}
+
+// MARK: - CardNumberFieldView + KeyboardToolbarable
+
+extension CardNumberFieldView: KeyboardToolbarable {
+    var firstResponderInput: UITextField {
+        textField
     }
 }

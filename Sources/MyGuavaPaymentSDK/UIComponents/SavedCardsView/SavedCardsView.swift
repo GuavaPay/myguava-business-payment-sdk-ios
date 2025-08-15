@@ -69,7 +69,7 @@ final class SavedCardsView: UIView {
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
         }
-        
+
         var frame = CGRect.zero
         frame.size.height = .leastNormalMagnitude
         tableView.tableHeaderView = UIView(frame: frame)
@@ -187,7 +187,7 @@ final class SavedCardsView: UIView {
     func setCardsData(_ data: [Section: [[SavedCardsCellKind]]]) {
         cards = data
     }
-    
+
     func setSelectedSegment(index: Int) {
         guard segmentedControl.selectedSegmentIndex != index,
               index < segmentedControl.numberOfSegments else { return }

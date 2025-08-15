@@ -14,4 +14,5 @@ struct PaymentDTO {
     let availablePaymentMethods: [OrderPaymentMethod]
     let availableCardCategories: [CardProductCategory]
     let savedCards: (valid: [Binding], invalid: [Binding])
+    let disableCardholderNameField: Bool
 }

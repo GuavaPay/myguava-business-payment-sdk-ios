@@ -15,6 +15,13 @@ extension Encodable {
             return nil
         }
 
-        return jsonObject as? [String: Any]
+        var json = jsonObject as? [String: Any]
+
+        // Remove top level fields with empty object
+        for (key, value) in json ?? [:] where (value as? [String: Any])?.isEmpty == true {
+            json?[key] = nil
+        }
+
+        return json
     }
 }

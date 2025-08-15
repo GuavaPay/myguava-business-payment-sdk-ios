@@ -22,7 +22,6 @@ final class CardholderNameFieldView: UIView {
 
     private lazy var textField: UITextField = {
         let textField = UITextField()
-        textField.addKeyboardDoneToToolbar()
         textField.delegate = self
         textField.autocapitalizationType = .allCharacters
         textField.keyboardType = .asciiCapable
@@ -149,3 +148,12 @@ extension CardholderNameFieldView: ShimmerableView {
         [titleLabel: .automatic]
     }
 }
+
+// MARK: - CardholderNameFieldView + KeyboardToolbarable
+
+extension CardholderNameFieldView: KeyboardToolbarable {
+    var firstResponderInput: UITextField {
+        textField
+    }
+}
+

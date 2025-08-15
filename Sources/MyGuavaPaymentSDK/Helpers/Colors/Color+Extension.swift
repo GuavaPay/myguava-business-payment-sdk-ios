@@ -31,7 +31,7 @@ extension UIColor {
     convenience init(
         light lightModeColor: @escaping @autoclosure () -> UIColor,
         dark darkModeColor: @escaping @autoclosure () -> UIColor
-     ) {
+    ) {
         self.init { traitCollection in
             switch traitCollection.userInterfaceStyle {
             case .light, .unspecified:

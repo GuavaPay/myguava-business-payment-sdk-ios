@@ -20,9 +20,10 @@ protocol PaymentViewInput: AnyObject {
     func configureSelectCountry(_ country: CountryResponse)
     func configureValidEmailField(_ isValid: Bool)
     func setCardNumber(_ model: CardScannerModel)
+    func setSecurityCodeLength(_ length: Int)
     func setCurrentContactInformation(_ data: Payer?)
     func configureSaveCards(_ saveCards: [SavedCardsView.Section: [[SavedCardsCellKind]]])
-    func selectSegmentControl(index: Int) 
+    func selectSegmentControl(index: Int)
     func hideApplePayment()
     func disablePaymentCard()
     func disableAllPayments()
@@ -30,6 +31,7 @@ protocol PaymentViewInput: AnyObject {
     func hideSaveCards(_ isHidden: Bool)
     func hideCardholderInput()
     func setIsBindingAvailable(_ isBindingAvailable: Bool)
+    func nextActiveInputIfAvailable()
 }
 
 protocol PaymentViewOutput {
@@ -41,18 +43,25 @@ protocol PaymentViewOutput {
     func didTapDeleteCardButton(indexPath: IndexPath)
     func didTapEditCardButton(indexPath: IndexPath)
     func didTapConfirmButton()
-    func didCloseView()
+    func didCloseViewByUser()
     func didTapScanCard()
     func didTapSaveNewCard(_ needSaveNewCard: Bool)
     func didChangeNewCardName(_ name: String)
     func didSelectSavedCards(_ showSaveCards: Bool)
     func didChangeSavedCardCVV(_ indexPath: IndexPath, code: String)
     func didTapContactInformationSaveButton(phoneNumber: String, email: String)
+    func didTapChangeInfo(editing: Bool)
 }
 
 protocol PaymentInteractorInput {
     func getOrder(shouldRetry: Bool)
-    func preCreatePayment(cardInfo: CardInfo?, bindingInfo: BindingInfo?, contactInfo: ContactInfo?, saveCard: Bool)
+    func listenOrderStatus()
+    func executePayment(
+        paymentMethod: PaymentMethodRequest,
+        newCardName: String?,
+        contactInfo: ContactInfo?,
+        saveCard: Bool
+    )
     func payApple()
     func resolveCardNumber(_ cardNumber: String)
     func getCountries()
@@ -63,8 +72,8 @@ protocol PaymentInteractorInput {
 protocol PaymentInteractorOutput: AnyObject {
     func didGetOrder(_ order: PaymentDTO)
     func didNotGetOrder(_ error: Error)
-    func didNotPreCreateOrder(_ error: Error)
-    func didExecutePayment(_ status: PaymentStatus)
+    func didNotExecutePayment(_ errorStatus: OrderStatusError)
+    func didContinuePayment(_ status: PaymentStatus)
     func didGetCountries(_ countries: [CountryResponse])
     func didResolveCardNumber(_ model: ResolveCard?)
     func setIsBindingAvailable(_ isBindingAvailable: Bool)
@@ -86,12 +95,13 @@ protocol PaymentRouterInput: Router {
         selectedCountry: CountryResponse?,
         output: SelectCountryCodeModuleOutput?
     )
-    func showPopup(
+    func showDeleteCardPopup(
         cardName: String,
         deleteAction: (() -> Void)?,
         cancelAction: (() -> Void)?
     )
     func showEditCardNamePopup(
+        currentName: String?,
         saveAction: (() -> Void)?,
         cancelAction: (() -> Void)?,
         editCardName: ((String) -> Void)?

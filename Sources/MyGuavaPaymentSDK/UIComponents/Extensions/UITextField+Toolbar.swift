@@ -10,9 +10,9 @@ import UIKit
 extension UITextField {
 
     func addKeyboardArrowToToolbar(
-        onDone: (target: Any, action: Selector),
         onUpArrow: (target: Any, action: Selector),
-        onDownArrow: (target: Any, action: Selector)
+        onDownArrow: (target: Any, action: Selector),
+        onDone: (target: Any, action: Selector) = (self,  #selector(doneButtonTapped))
     ) {
         let toolbar: UIToolbar = UIToolbar()
         toolbar.barStyle = .default

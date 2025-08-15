@@ -6,12 +6,15 @@ import PackageDescription
 let package = Package(
     name: "MyGuavaPaymentSDK",
     defaultLocalization: "en",
-    platforms: [.iOS(.v13)],
+    platforms: [
+        .iOS(.v13)
+    ],
     products: [
         .library(
             name: "MyGuavaPaymentSDK",
+            type: .static,
             targets: ["MyGuavaPaymentSDK"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.3.2"),
@@ -19,6 +22,7 @@ let package = Package(
         .package(url: "https://github.com/marmelroy/PhoneNumberKit", from: "3.7.7"),
         .package(url: "https://github.com/GuavaPay/Guavapay3DS2", from: "0.0.1"),
         .package(url: "https://github.com/Juanpe/SkeletonView.git", from: "1.30.4"),
+        .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.54.0")
     ],
     targets: [
         .target(
@@ -30,6 +34,7 @@ let package = Package(
                 .product(name: "Guavapay3DS2", package: "Guavapay3DS2"),
                 .product(name: "SwiftGuavapay3DS2", package: "Guavapay3DS2"),
                 .product(name: "SkeletonView", package: "SkeletonView"),
+                .product(name: "Sentry", package: "sentry-cocoa")
             ],
             resources: [
                 .process("Resources")
@@ -38,7 +43,7 @@ let package = Package(
         .testTarget(
             name: "MyGuavaPaymentSDKTests",
             dependencies: ["MyGuavaPaymentSDK"]
-        ),
+        )
     ],
     swiftLanguageModes: [.v5]
 )

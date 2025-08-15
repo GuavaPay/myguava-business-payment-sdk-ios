@@ -15,7 +15,7 @@ final class PollingDebouncer {
     init(interval: TimeInterval = 0.3) {
         self.interval = interval
     }
-    
+
     deinit {
         stop()
     }

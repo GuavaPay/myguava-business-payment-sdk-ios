@@ -146,6 +146,9 @@ final class EditCardNamePopupViewController: UIViewController, EditCardNamePopup
         titleLabel.isHidden = config.title == nil
         messageLabel.text = config.message
         messageLabel.isHidden = config.message == nil
+        if let inputText = config.inputText {
+            inputField.setText(inputText)
+        }
         buttonConfigs = config.buttons ?? []
 
         guard let buttons = config.buttons else {

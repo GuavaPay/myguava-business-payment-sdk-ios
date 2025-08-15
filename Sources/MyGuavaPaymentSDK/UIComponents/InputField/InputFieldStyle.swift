@@ -1,6 +1,6 @@
 //
 //  InputFieldStyle.swift
-//  
+//
 //
 //  Created by Mikhail Kirillov on 18/6/24.
 //
@@ -35,9 +35,9 @@ extension InputField {
 
         var foregroundColor: UIColor = { .input.secondaryForeground }()
         var padding: UIEdgeInsets = .init(top: .spacing200,
-                                               left: .spacing200,
-                                               bottom: .spacing200,
-                                               right: .spacing200)
+                                          left: .spacing200,
+                                          bottom: .spacing200,
+                                          right: .spacing200)
     }
 
     protocol Style: ForegroundColor {

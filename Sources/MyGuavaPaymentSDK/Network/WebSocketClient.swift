@@ -19,6 +19,11 @@ public enum WSEnvironment: String {
 }
 
 final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
+
+    var isConnected: Bool {
+        pingTimer != nil
+    }
+
     private var session: URLSession?
     private var webSocketTask: URLSessionWebSocketTask?
     private let environment: WSEnvironment
@@ -28,17 +33,16 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var reconnectTimer: Timer?
     private var pingTimer: Timer?
 
-    private let pingInterval: TimeInterval = 15
-    private let reconnectInterval: TimeInterval = 5
-
-    private var failureConnectionRetryCount = 3
+    private let connectionRetryInterval: TimeInterval = 0.15
+    private let connectionRetryCount = 3
     private var currentConnectionRetryCount = 0
 
-    private var failurePingRetryCount = 5
+    private let pingRetryInterval: TimeInterval = 2.0
+    private let pingRetryCount = 3
     private var currentPingRetryCount = 0
 
     private var onEvent: ((String) -> Void)?
-    private var onFailure: ((Error) -> Void)?
+    private var onFailure: ((APIError) -> Void)?
 
     init(
         environment: WSEnvironment,
@@ -54,7 +58,7 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
 
     func startListening(
         onEvent: @escaping (String) -> Void,
-        onFailure: ((Error) -> Void)? = nil) {
+        onFailure: ((APIError) -> Void)? = nil) {
 
             self.onEvent = onEvent
             self.onFailure = onFailure
@@ -70,6 +74,10 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
 
             guard let url = URL(string: urlString) else {
                 print("[WebSocketClient] Invalid WS URL: \(urlString)")
+
+                let error = APIError.invalidURL
+                SentryFacade.shared.capture(apiError: error, source: .webSocket)
+                onFailure?(error)
                 return
             }
 
@@ -108,70 +116,91 @@ private extension WebSocketClient {
 
             switch result {
             case .success(let message):
-                self.currentConnectionRetryCount = 0
+                currentConnectionRetryCount = 0
 
                 switch message {
                 case .string(let text):
-                    self.onEvent?(text)
+                    onEvent?(text)
                 case .data(let data):
                     guard let text = String(data: data, encoding: .utf8) else {
                         return
                     }
-                    self.onEvent?(text)
+                    onEvent?(text)
+                @unknown default:
+                    assertionFailure("Unexpectected message type")
                 }
-                self.listen()
+                listen()
 
             case .failure(let error):
-                print("[WebSocketClient] Receive failed: \(error)")
 
-                if self.currentConnectionRetryCount < self.failureConnectionRetryCount {
-                    self.currentConnectionRetryCount += 1
-                    print("[WebSocketClient] Retrying (\(self.currentConnectionRetryCount)/\(self.failureConnectionRetryCount))...")
-                    self.scheduleReconnect()
+                // Track connection retry count and fallback to onFailure after threshold
+                currentConnectionRetryCount += 1
+                print("[WebSocketClient] Connection error: \(error)")
+                print("[WebSocketClient] Connection retry (\(currentConnectionRetryCount)/\(connectionRetryCount))")
+
+                if currentConnectionRetryCount >= connectionRetryCount {
+                    print("[WebSocketClient] Connection retry failed")
+
+                    let error = APIError.connectionFailed
+                    fallback(with: error)
                 } else {
-                    print("[WebSocketClient] Retrying failed")
-                    self.currentConnectionRetryCount = 0
-                    self.onFailure?(error)
+                    scheduleReconnect()
                 }
             }
         }
     }
 
     func startPing() {
-        pingTimer = Timer.scheduledTimer(withTimeInterval: pingInterval, repeats: true) { [weak self] _ in
+        pingTimer?.invalidate()
+        pingTimer = Timer.scheduledTimer(withTimeInterval: pingRetryInterval, repeats: true) { [weak self] _ in
             self?.sendPing()
         }
     }
 
+    func stopPing() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+    }
+
     func sendPing() {
         webSocketTask?.sendPing { [weak self] error in
-            if let error {
-                print("[WebSocketClient] Ping error: \(error)")
-                guard let self = self else { return }
-
-                // Track ping retry count and fallback to onFailure after threshold
-                self.currentPingRetryCount += 1
-                print("[WebSocketClient] Ping retry (\(self.currentPingRetryCount)/\(self.failurePingRetryCount))")
-
-                if self.currentPingRetryCount >= self.failurePingRetryCount {
-                    print("[WebSocketClient] Ping retries failed")
-                    self.currentPingRetryCount = 0
-                    self.onFailure?(error)
-                } else {
-                    self.scheduleReconnect()
-                }
-            } else {
+            guard let error else {
                 print("[WebSocketClient] Ping successful")
+                return
+            }
+
+            guard let self else { return }
+
+            // Track ping retry count and fallback to onFailure after threshold
+            currentPingRetryCount += 1
+            print("[WebSocketClient] Ping error: \(error)")
+            print("[WebSocketClient] Ping retry (\(currentPingRetryCount)/\(pingRetryCount))")
+
+            if currentPingRetryCount >= pingRetryCount {
+                print("[WebSocketClient] Ping retry failed")
+
+                let error = APIError.connectionFailed
+                SentryFacade.shared.capture(apiError: error, source: .webSocket)
+                fallback(with: error)
+            } else {
+                scheduleReconnect()
             }
         }
     }
 
     func scheduleReconnect() {
         reconnectTimer?.invalidate()
-        reconnectTimer = Timer.scheduledTimer(withTimeInterval: reconnectInterval, repeats: false) { [weak self] _ in
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: connectionRetryInterval, repeats: false) { [weak self] _ in
             print("[WebSocketClient] Attempting reconnect #\(self?.currentConnectionRetryCount ?? 0)")
             self?.startListening(onEvent: self?.onEvent ?? { _ in }, onFailure: self?.onFailure)
         }
+    }
+
+    func fallback(with error: APIError) {
+        currentConnectionRetryCount = 0
+        currentPingRetryCount = 0
+        stopPing()
+        onFailure?(error)
     }
 }
 

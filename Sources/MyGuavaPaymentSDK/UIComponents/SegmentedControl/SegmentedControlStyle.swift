@@ -1,6 +1,6 @@
 //
 //  SegmentedControlStyle.swift
-//  
+//
 //
 //  Created by Mikhail Kirillov on 25/6/24.
 //

@@ -14,7 +14,7 @@ final class CardInformationView: UIView {
     enum Field {
         case cardNumber(String)
         case expirationDate(month: String, year: String)
-        case securityCode(Int)
+        case securityCode(Int?)
         case cardName(String)
         case cardHolderName(String)
     }
@@ -88,10 +88,19 @@ final class CardInformationView: UIView {
         return stack
     }()
 
+    private var activeInputs: [any KeyboardToolbarable] {
+        [
+            cardNumberView,
+            expirationView,
+            securityCodeView,
+            cardHolderNameFieldView
+        ]
+            .compactMap { $0 as? any KeyboardToolbarable }
+    }
+
     private var cardNameFieldHeightConstraint: Constraint?
     private var bottomSpacerHeightConstraint: Constraint?
     private var isAdditionalViewVisible = false
-
 
     private(set) var isLoading: Bool = false {
         didSet {
@@ -139,7 +148,7 @@ final class CardInformationView: UIView {
         cardContainerStack.addArrangedSubview(cardNumberView)
         cardContainerStack.setCustomSpacing(16, after: cardNumberView)
         cardContainerStack.addArrangedSubview(bottomSectionStack)
-        
+
     }
 
     private func setupLayout() {
@@ -159,11 +168,11 @@ final class CardInformationView: UIView {
             bottomSpacerHeightConstraint = $0.height.equalTo(0).constraint
         }
     }
-    
+
     func hideCardholderInput() {
         cardHolderNameFieldView.isHidden = true
     }
-    
+
     func setSaveCardCheckboxVisible(_ isVisible: Bool) {
         if isVisible {
             if bottomSectionStack.arrangedSubviews.contains(saveCardContainer) == false {
@@ -177,6 +186,14 @@ final class CardInformationView: UIView {
             saveCardContainer.removeFromSuperview()
             bottomSectionStack.setCustomSpacing(8, after: bottomInputsStack)
         }
+    }
+
+    func setSecurityCodeLength(_ length: Int) {
+        securityCodeView.setCodeLength(length)
+    }
+
+    func nextActiveInputIfAvailable() {
+        switchActiveInput(toNext: true)
     }
 
     private func bindActions() {
@@ -196,13 +213,19 @@ final class CardInformationView: UIView {
             self?.onFieldEndEditing?(.expirationDate(month: month, year: year))
         }
 
-        securityCodeView.onEndEditing = { [weak self] digits in
-            guard let code = Int(digits) else { return }
-            self?.onFieldEndEditing?(.securityCode(code))
+        securityCodeView.onEndEditing = { [weak self] cvv in
+            self?.onFieldEndEditing?(.securityCode(Int(cvv)))
         }
-        
+
         cardHolderNameFieldView.onTextChanged = { [weak self] text in
             self?.onFieldEndEditing?(.cardHolderName(text))
+        }
+
+        activeInputs.forEach {
+            $0.addKeyboardArrowToToolbar(
+                onUpArrow: (self, #selector(previousActiveInput)),
+                onDownArrow: (self, #selector(nextActiveInput))
+            )
         }
     }
 
@@ -250,6 +273,32 @@ final class CardInformationView: UIView {
         }
     }
 
+    private func switchActiveInput(toNext: Bool) {
+        var activeInputs = activeInputs.filter { $0.isHidden == false }
+
+        if !toNext {
+            activeInputs.reverse()
+        }
+
+        guard let activeInputIndex = activeInputs.firstIndex(where: { $0.isContainerResponder }) else {
+            return
+        }
+
+        if activeInputIndex + 1 < activeInputs.count {
+            activeInputs[activeInputIndex + 1].becomeContainerResponder()
+        }
+    }
+
+    @objc
+    private func nextActiveInput() {
+        switchActiveInput(toNext: true)
+    }
+
+    @objc
+    private func previousActiveInput() {
+        switchActiveInput(toNext: false)
+    }
+
     /// Shows shimmer loading
     func showLoading() {
         isLoading = true
@@ -259,7 +308,7 @@ final class CardInformationView: UIView {
     func hideLoading() {
         isLoading = false
     }
-    
+
     func disable() {
         expirationView.disable()
         cardHolderNameFieldView.disable()

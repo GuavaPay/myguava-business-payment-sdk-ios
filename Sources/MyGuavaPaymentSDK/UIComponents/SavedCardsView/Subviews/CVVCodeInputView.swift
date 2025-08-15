@@ -56,6 +56,9 @@ final class CVVCodeInputView: UIView {
         return stack
     }()
 
+    private var actualCVV: String = ""
+    private var maskTimer: Timer?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupLayout()
@@ -89,13 +92,17 @@ final class CVVCodeInputView: UIView {
         }
     }
 
-    func getCVV() -> String {
-        return cvvInputField.text ?? ""
-    }
+    func showMaskedCVVWithLastDigitVisible() {
+        maskTimer?.invalidate()
 
-    func isValidCVV() -> Bool {
-        let regex = #"^\d{3,4}$"#
-        return NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: getCVV())
+        let masked = String(repeating: "*", count: max(0, actualCVV.count - 1))
+        let display = masked + actualCVV.suffix(1)
+        cvvInputField.text = display
+
+        maskTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            self.cvvInputField.text = String(repeating: "*", count: self.actualCVV.count)
+        }
     }
 }
 
@@ -103,18 +110,26 @@ final class CVVCodeInputView: UIView {
 
 extension CVVCodeInputView: UITextFieldDelegate {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        guard let current = textField.text, let range = Range(range, in: current) else { return false }
+        guard let current = actualCVV as NSString? else { return false }
 
-        let updated = current.replacingCharacters(in: range, with: string)
-        let digits = updated.replacingOccurrences(of: "\\D", with: "", options: .regularExpression)
+        let isDeleting = string.isEmpty
 
-        if digits.count > maxLength { return false }
+        if isDeleting {
+            actualCVV = current.replacingCharacters(in: range, with: "")
+            cvvInputField.text = String(repeating: "*", count: actualCVV.count)
+            return false
+        }
 
-        textField.text = digits
+        let cleanInput = string.replacingOccurrences(of: "\\D", with: "", options: .regularExpression)
+        let newValue = current.replacingCharacters(in: range, with: cleanInput)
+        if newValue.count > 4 { return false }
+
+        actualCVV = newValue
+        showMaskedCVVWithLastDigitVisible()
         return false
     }
 
     func textFieldDidEndEditing(_ textField: UITextField) {
-        onCVVCodeEndEditing?(textField.text ?? "")
+        onCVVCodeEndEditing?(actualCVV)
     }
 }

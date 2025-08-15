@@ -1,6 +1,6 @@
 //
 //  InputBackDropViewStyle.swift
-//  
+//
 //
 //  Created by Mikhail Kirillov on 18/6/24.
 //
@@ -13,10 +13,12 @@ extension InputBackDropView {
     }
 
     struct StockStyle: Style {
-        var padding: UIEdgeInsets = .init(top: .spacing100,
-                                                 left: .spacing400,
-                                                 bottom: .spacing100,
-                                                 right: .spacing200)
+        var padding: UIEdgeInsets = .init(
+            top: .spacing100,
+            left: .spacing400,
+            bottom: .spacing100,
+            right: .spacing200
+        )
 
         var backgroundColor: UIColor = UICustomization.Input.backgroundColor
         var cornerRadius: CGFloat = UICustomization.Input.cornerRadius

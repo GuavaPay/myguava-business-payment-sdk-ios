@@ -17,7 +17,7 @@ extension Button {
                        type: ButtonType) -> Style
     }
 
-    
+
     /// Button height, width is per content or outside constraints
     enum Size: Equatable {
         /// 48
@@ -132,98 +132,98 @@ extension Button {
         }
 
         func makeStyle(state: State,
-                              scheme: Scheme,
-                              size: Size,
-                              type: ButtonType) -> Style {
+                       scheme: Scheme,
+                       size: Size,
+                       type: ButtonType) -> Style {
             let padding = paddingForSize(size: size, type: type)
             let spacing = spacingForSize(size: size, type: type)
             let spinnerSize = spinnerSizeForSize(size: size, type: type)
             let stock = StockStyle().padding(padding).spacing(spacing).spinnerSize(spinnerSize).height(size.height)
 
-            switch (state, scheme) 
+            switch (state, scheme)
             {
             case (.enabled, .primary), (.loading, .danger), (.loading, .primary): return stock
             case (.disabled, .primary):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundDisabled)
-                    .foregroundColor(.button.primaryForegroundDisabled)
+            return stock
+                .backgroundColor(.button.primaryBackgroundDisabled)
+                .foregroundColor(.button.primaryForegroundDisabled)
             case (.disabled, .secondary):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundDisabled)
-                    .foregroundColor(.button.primaryForegroundDisabled)
+            return stock
+                .backgroundColor(.button.primaryBackgroundDisabled)
+                .foregroundColor(.button.primaryForegroundDisabled)
             case (.disabled, .danger):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundDisabled)
-                    .foregroundColor(.button.primaryForegroundDisabled)
+            return stock
+                .backgroundColor(.button.primaryBackgroundDisabled)
+                .foregroundColor(.button.primaryForegroundDisabled)
             case (.disabled, .ghost):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundDisabled)
-                    .foregroundColor(.button.primaryForegroundDisabled)
+            return stock
+                .backgroundColor(.button.primaryBackgroundDisabled)
+                .foregroundColor(.button.primaryForegroundDisabled)
             case (.enabled, .secondary):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             case (.enabled, .danger):
-                return stock
-                    .backgroundColor(.button.dangerBackgroundRest)
-                    .foregroundColor(.button.primaryForegroundRest)
+            return stock
+                .backgroundColor(.button.dangerBackgroundRest)
+                .foregroundColor(.button.primaryForegroundRest)
             case (.enabled, .ghost):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             case (.pressed, .primary):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundPressed)
+            return stock
+                .backgroundColor(.button.primaryBackgroundPressed)
             case (.pressed, .secondary):
-                return stock
-                    .backgroundColor(.button.secondaryBackgroundPressed)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.button.secondaryBackgroundPressed)
+                .foregroundColor(.foreground.onAccent)
             case (.pressed, .danger):
-                return stock
-                    .backgroundColor(.button.dangerBackgroundPressed)
-                    .foregroundColor(.background.primary)
+            return stock
+                .backgroundColor(.button.dangerBackgroundPressed)
+                .foregroundColor(.background.primary)
             case (.pressed, .ghost):
-                return stock
-                    .backgroundColor(.button.secondaryBackgroundPressed)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.button.secondaryBackgroundPressed)
+                .foregroundColor(.foreground.onAccent)
             case (.loading, .secondary):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             case (.loading, .ghost):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             case (.hovered, .primary):
-                return stock
-                    .backgroundColor(.button.primaryBackgroundHover)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.button.primaryBackgroundHover)
+                .foregroundColor(.foreground.onAccent)
             case (.hovered, .secondary):
-                return stock
-                    .backgroundColor(.button.secondaryBackgroundHover)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.button.secondaryBackgroundHover)
+                .foregroundColor(.foreground.onAccent)
             case (.hovered, .danger):
-                return stock
-                    .backgroundColor(.button.dangerBackgroundHover)
-                    .foregroundColor(.background.primary)
+            return stock
+                .backgroundColor(.button.dangerBackgroundHover)
+                .foregroundColor(.background.primary)
             case (.hovered, .ghost):
-                return stock
-                    .backgroundColor(.button.secondaryBackgroundHover)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.button.secondaryBackgroundHover)
+                .foregroundColor(.foreground.onAccent)
             case (.focused, .primary):
-                return stock
+            return stock
             case (.focused, .secondary):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             case (.focused, .danger):
-                return stock
-                    .backgroundColor(.button.dangerBackgroundRest)
-                    .foregroundColor(.button.primaryBackgroundRest)
+            return stock
+                .backgroundColor(.button.dangerBackgroundRest)
+                .foregroundColor(.button.primaryBackgroundRest)
             case (.focused, .ghost):
-                return stock
-                    .backgroundColor(.clear)
-                    .foregroundColor(.foreground.onAccent)
+            return stock
+                .backgroundColor(.clear)
+                .foregroundColor(.foreground.onAccent)
             }
         }
     }

@@ -1,6 +1,6 @@
 //
 //  SearchFieldStyle.swift
-//  
+//
 //
 //  Created by Ignat Chegodaykin on 19.06.2024.
 //
@@ -10,12 +10,12 @@ import UIKit
 extension SearchFieldView {
 
     protocol Style: CornerRadius,
-                           BackgroundColor,
-                           ForegroundColor,
-                           BorderColor,
-                           TitleFont,
-                           TintColor,
-                           Height {
+                    BackgroundColor,
+                    ForegroundColor,
+                    BorderColor,
+                    TitleFont,
+                    TintColor,
+                    Height {
         var cursorColor: UIColor { get }
         var activeBorderColor: UIColor { get }
 

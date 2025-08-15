@@ -69,7 +69,7 @@ final class SegmentedControl: UISegmentedControl {
             item.action(segment)
         }
     }
-    
+
     /// Inserts SegmentItem at given index
     /// - Parameters:
     ///   - item: item for insertion
@@ -85,7 +85,7 @@ final class SegmentedControl: UISegmentedControl {
             self.insertSegment(withTitle: item.title, at: segment, animated: animated)
         }
     }
-    
+
     /// Sets view's segments
     /// - Parameters:
     ///   - items: array of SegmentItem

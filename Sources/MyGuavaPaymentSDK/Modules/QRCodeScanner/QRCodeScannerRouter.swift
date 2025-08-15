@@ -11,7 +11,7 @@ final class QRCodeScannerRouter {
 
     private(set) weak var rootController: UIViewController?
 
-     // MARK: - Init
+    // MARK: - Init
 
     init(view: UIViewController) {
         rootController = view

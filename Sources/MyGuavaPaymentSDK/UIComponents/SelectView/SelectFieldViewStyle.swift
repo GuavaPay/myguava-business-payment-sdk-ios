@@ -79,11 +79,11 @@ extension SelectFieldView {
     }
 
     protocol Style: BorderColor,
-                           BorderWidth,
-                           BackgroundColor,
-                           CornerRadius,
-                           Height,
-                           TintColor {
+                    BorderWidth,
+                    BackgroundColor,
+                    CornerRadius,
+                    Height,
+                    TintColor {
         var inputTextFont: UIFont { get set }
         var titleTextFont: UIFont { get set }
         var placeholderTextFont: UIFont { get set }

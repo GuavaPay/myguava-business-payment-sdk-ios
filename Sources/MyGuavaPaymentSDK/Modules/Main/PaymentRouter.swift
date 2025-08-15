@@ -11,7 +11,7 @@ final class PaymentRouter {
 
     private(set) weak var rootController: UIViewController?
 
-     // MARK: - Init
+    // MARK: - Init
 
     init(view: UIViewController) {
         rootController = view
@@ -40,7 +40,7 @@ extension PaymentRouter: PaymentRouterInput {
         rootController?.presentController(viewController)
     }
 
-    func showPopup(cardName: String, deleteAction: (() -> Void)?, cancelAction: (() -> Void)?) {
+    func showDeleteCardPopup(cardName: String, deleteAction: (() -> Void)?, cancelAction: (() -> Void)?) {
         let deleteButton = Button(
             config: Button.Config(
                 type: .text("Delete"),
@@ -81,6 +81,7 @@ extension PaymentRouter: PaymentRouterInput {
     }
 
     func showEditCardNamePopup(
+        currentName: String?,
         saveAction: (() -> Void)?,
         cancelAction: (() -> Void)?,
         editCardName: ((String) -> Void)?
@@ -103,6 +104,7 @@ extension PaymentRouter: PaymentRouterInput {
         )
         let config = PopupConfig(
             title: "Rename card",
+            inputText: currentName,
             buttons: [
                 saveButton,
                 cancelButton
@@ -122,7 +124,7 @@ extension PaymentRouter: PaymentRouterInput {
 
         rootController?.presentController(popup)
     }
-    
+
     func showErrorConnectionPopup(
         title: String,
         subtitle: String,

@@ -8,13 +8,19 @@
 import Foundation
 
 final class PaymentViewModel {
-    
+
     private var payment: PaymentDTO
-    
+
     var contactInfoViewModel: ContactInfoViewModel = .init()
-    var cardInfoViewModel: CardInfoViewModel = .init()
     var bindingInfoViewModel: BindingInfoViewModel = .init()
-    var needSaveNewCard: Bool = false
+    lazy var cardInfoViewModel: CardInfoViewModel = .init(disableCardholderNameField: payment.disableCardholderNameField)
+
+    var needSaveNewCard = false
+
+    var payer: Payer?
+
+    let totalAmount: Amount?
+    let disableCardholderNameField: Bool
 
     var isCardPaymentAvailable: Bool {
         payment.availablePaymentMethods.contains { $0 == .paymentCard } &&
@@ -25,15 +31,15 @@ final class PaymentViewModel {
     var saveCardsIsEmpty: Bool {
         (payment.savedCards.valid.count + payment.savedCards.invalid.count) == 0
     }
-    
+
     var validSaveCards: [Binding] {
         payment.savedCards.valid
     }
-    
+
     var invalidSaveCards: [Binding] {
         payment.savedCards.invalid
     }
-    
+
     var isAvailableApplePay: Bool {
         payment.availablePaymentMethods.contains { $0 == .applePay } &&
         payment.availableAppleCardSchemes.isNotEmpty
@@ -49,14 +55,12 @@ final class PaymentViewModel {
         }
         return "Pay \(totalAmount.baseUnits.formattedStringWithCurrency(totalAmount.currency))"
     }
-    
-    var payer: Payer?
-    let totalAmount: Amount?
-    
+
     init(payment: PaymentDTO) {
         self.payment = payment
         self.payer = payment.order?.payer
         self.totalAmount = payment.order?.totalAmount
+        self.disableCardholderNameField = payment.disableCardholderNameField
     }
 }
 

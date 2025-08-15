@@ -10,13 +10,19 @@ struct CardInfo {
     var expiryMonth: String = ""
     var expiryYear: String = ""
     var cvv: Int = 0
-    
+
     var newCardName: String?
     var cardholderName: String?
-    
+
     var holderName: String? {
         guard let cardholderName else { return nil }
         return cardholderName.isEmpty ? nil : cardholderName
+    }
+
+    var expiryDate: String? {
+        guard !expiryYear.isEmpty, !expiryMonth.isEmpty else { return nil }
+
+        return "\(expiryYear)\(expiryMonth)"
     }
 }
 

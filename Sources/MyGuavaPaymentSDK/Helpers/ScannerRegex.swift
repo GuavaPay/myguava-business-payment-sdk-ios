@@ -26,7 +26,7 @@ struct ScannerRegex: ExpressibleByStringLiteral {
         let ranges = nsRegularExpression?
             .matches(in: string, options: [], range: searchRange(for: string))
             .compactMap { Range($0.range, in: string) }
-            ?? []
+        ?? []
 
         return ranges
             .map { string[$0] }
@@ -64,7 +64,7 @@ struct ScannerRegex: ExpressibleByStringLiteral {
     func captures(in string: String) -> [String] {
         guard
             let checkingResult = nsRegularExpression?
-            .firstMatch(in: string, options: [], range: searchRange(for: string)) else {
+                .firstMatch(in: string, options: [], range: searchRange(for: string)) else {
             return []
         }
 

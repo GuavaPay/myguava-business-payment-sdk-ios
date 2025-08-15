@@ -187,10 +187,16 @@ struct Refund: Codable {
 struct PaymentRequirements: Codable {
     let threedsMethod: ThreedsMethod?
     let threedsChallenge: ThreedsChallenge?
+    let threedsSdkCreateTransaction: ThreeDSSdkCreateTransaction?
     let payerAuthorization: PayerAuthorization?
     let cryptocurrencyTransfer: CryptocurrencyTransfer?
     let payPalOrderApprove: PayPalOrderApprove?
     let finishPageRedirect: FinishPageRedirect?
+}
+
+struct ThreeDSSdkCreateTransaction: Codable {
+    let messageVersion: String
+    let directoryServerID: String
 }
 
 struct IntermediateResultPageOptions: Codable {
@@ -295,7 +301,7 @@ struct MaskedContactPhone: Codable {
 
     init?(countryCode: String?, nationalNumber: String?, formatted: String?) {
         guard let countryCode, let nationalNumber, let formatted else { return nil }
-        
+
         self.countryCode = countryCode
         self.nationalNumber = nationalNumber
         self.formatted = formatted

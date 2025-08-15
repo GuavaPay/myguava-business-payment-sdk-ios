@@ -124,7 +124,7 @@ final class SelectFieldView: UIView {
             state ?? .enabled
         )
     }
-    
+
     /// Enables manual text input into the selector. Disabled by default.
     var isEnabled: Bool = false {
         didSet {
@@ -138,7 +138,7 @@ final class SelectFieldView: UIView {
             applyStyle()
         }
     }
-    
+
     /// Allows you to set the message text for the left part under the selector field
     var bottomLeftText: String? {
         didSet {
@@ -154,17 +154,17 @@ final class SelectFieldView: UIView {
             applyStyle()
         }
     }
-    
+
     /// Short circuit triggered by textfield value change
     var valueChanged: ((String) -> Void)?
-    
+
     /// Callback called when the component is clicked
     var onAction: (() -> Void)?
 
     private var placeholderText: String?
 
     // MARK: - Init
-    
+
     /// Init
     /// - Parameters:
     ///   - state: Allows you to set the current state for the selector
@@ -207,7 +207,7 @@ final class SelectFieldView: UIView {
     override var intrinsicContentSize: CGSize {
         return CGSize(width: UIView.noIntrinsicMetric, height: style.height)
     }
-    
+
     /// Sets dropDown Image
     func setDropDownImage(_ image: UIImage?) {
         dropDownArrowImageView.image = image
@@ -247,22 +247,22 @@ final class SelectFieldView: UIView {
                 $0.size.equalTo(size)
                 $0.directionalEdges.equalToSuperview().inset(padding)
             }
-            
+
             textFieldContainerStackView.layoutMargins = .init(top: 12, left: 8, bottom: 12, right: 16)
             iconContainerView.isHidden = false
         }
     }
-    
+
     /// Allows you to set the placeholder text
     func setPlaceholderText(_ text: String) {
         placeholderLabel.text = text
     }
-    
+
     /// Allows you to set the text of the title field
     func setTitleText(_ text: String) {
         titleLabel.text = text
     }
-    
+
     /// Allows you to set the base text for the selector
     func setInputText(_ text: String) {
         textField.text = text

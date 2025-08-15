@@ -16,12 +16,12 @@ struct ApplePayEndpoint: APIEndpoint {
 
 struct ApplePayService {
     private let api: APIClient
-    
+
     init(api: APIClient = .shared) {
         self.api = api
     }
-    
-    func getContext(completion: @escaping (Result<APIResponse<ApplePayContext>, Error>) -> Void) {
+
+    func getContext(completion: @escaping (Result<APIResponse<ApplePayContext>, APIError>) -> Void) {
         api.performRequest(endpoint: ApplePayEndpoint(), completion: completion)
     }
 }

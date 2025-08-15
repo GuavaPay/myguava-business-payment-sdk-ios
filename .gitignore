@@ -7,3 +7,8 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 GuavapayPaymentSDKDemo/GuavapayPaymentSDKDemo.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+
+# Fastlane
+fastlane/build/*
+fastlane/*.xml
+fastlane/README.md

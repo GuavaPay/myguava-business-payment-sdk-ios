@@ -39,16 +39,20 @@ struct DeleteBindingEndpoint: APIEndpoint {
 
 struct BindingsService {
     private let api: APIClient
-    
+
     init(api: APIClient = .shared) {
         self.api = api
     }
-    
-    func getBindings(completion: @escaping (Result<APIResponse<Bindings>, Error>) -> Void) {
+
+    func getBindings(completion: @escaping (Result<APIResponse<Bindings>, APIError>) -> Void) {
         api.performRequest(endpoint: BindingsEndpoint(), completion: completion)
     }
 
-    func renameBinding(bindingId: String, name: String, completion: @escaping (Result<APIResponse<Binding>, Error>) -> Void) {
+    func renameBinding(
+        bindingId: String,
+        name: String,
+        completion: @escaping (Result<APIResponse<Binding>, APIError>) -> Void
+    ) {
         api.performRequest(
             endpoint: RenameBindingEndpoint(
                 bindingId: bindingId,
@@ -58,7 +62,7 @@ struct BindingsService {
         )
     }
 
-    func deleteBinding(bindingId: String, completion: @escaping (Result<APIResponse<String>, Error>) -> Void) {
+    func deleteBinding(bindingId: String, completion: @escaping (Result<APIResponse<String>, APIError>) -> Void) {
         api.performRequest(
             endpoint: DeleteBindingEndpoint(bindingId: bindingId),
             responseModel: String.self,

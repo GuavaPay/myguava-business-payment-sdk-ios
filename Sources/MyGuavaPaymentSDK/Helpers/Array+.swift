@@ -20,7 +20,7 @@ extension Array {
         }
         return (matching, nonMatching)
     }
-    
+
     var isNotEmpty: Bool {
         return !self.isEmpty
     }

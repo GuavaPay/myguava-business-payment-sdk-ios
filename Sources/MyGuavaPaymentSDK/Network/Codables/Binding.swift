@@ -20,11 +20,11 @@ struct Binding: Codable, Equatable {
     let cardData: CardData?
     let name: String?
     let product: Product?
-    
+
     var isEnabled: Bool {
         !(isReadonly ?? false)
     }
-    
+
     var isReadonly: Bool? = false
 }
 

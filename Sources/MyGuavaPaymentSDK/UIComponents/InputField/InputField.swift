@@ -1,6 +1,6 @@
 //
 //  InputField.swift
-//  
+//
 //
 //  Created by Mikhail Kirillov on 18/6/24.
 //
@@ -34,7 +34,7 @@ open class InputFieldTextProcessor: NSObject, UITextFieldDelegate {
 /// ```
 class InputField: UIView {
 
-   // MARK: - Subviews
+    // MARK: - Subviews
 
     private let mainContainerStackView: UIStackView = {
         let stackView = UIStackView()
@@ -54,7 +54,7 @@ class InputField: UIView {
             textProcessor.didChangeText
         }
     }
-    
+
     /// Sets didShouldReturn callback for current InputFieldTextProcessor
     /// Sets current InputFieldTextProcessor as UITextFieldDelegate for internal textfield
     var didShouldReturn: (() -> Void)? {
@@ -231,7 +231,7 @@ class InputField: UIView {
     }
 
     // MARK: - Init
-    
+
     /// Init
     /// - Parameters:
     ///   - state: Allows you to set the current state for the input
@@ -368,7 +368,7 @@ class InputField: UIView {
         customButton.addTarget(target, action: selector, for: .touchUpInside)
         rightButton = customButton
     }
-    
+
     /// Adds custom UIButton to last index of accessories stack view
     /// - Parameters:
     ///   - image: called in button.setImage for .normal state
@@ -398,7 +398,7 @@ class InputField: UIView {
     func removeRightMostAccessory() {
         rightAccessoryStackView.arrangedSubviews.last?.removeFromSuperview()
     }
-    
+
     /// Removes all accessory views in stack by calling .removeFromSuperview()
     func removeAllAccessoryViews() {
         rightAccessoryStackView.arrangedSubviews.forEach{ $0.removeFromSuperview() }
@@ -410,7 +410,7 @@ class InputField: UIView {
         self.textProcessor = textProcessor
         input.textFieldDelegate = textProcessor
     }
-    
+
     /// Changes current accessory views constraints
     /// - Parameter padding: new accessory padding used as directionalEdges
     func setAccessoriesViewPadding(padding: UIEdgeInsets) {
@@ -426,7 +426,7 @@ class InputField: UIView {
         self.styleFactory = StockStyleFactory(style: newStyle)
         updateView(with: currentStyle)
     }
-    
+
     /// Sets leftside card icon
     /// - Parameters:
     ///   - icon: card UIImage
@@ -439,7 +439,7 @@ class InputField: UIView {
             make.width.equalTo(iconWidth)
         }
     }
-    
+
     /// Sets icon to nil, iconWidth & iconTrailingOffset to 0
     func hideCardIcon() {
         setCardIcon(nil, iconWidth: 0, iconTrailingOffset: 0)

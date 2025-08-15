@@ -269,7 +269,7 @@ final class SearchFieldView: UIView {
         guard let value = textField.text else {
             return
         }
-        
+
         valueChanged?(value)
         clearIconImageView.isHidden = value.isEmpty
     }

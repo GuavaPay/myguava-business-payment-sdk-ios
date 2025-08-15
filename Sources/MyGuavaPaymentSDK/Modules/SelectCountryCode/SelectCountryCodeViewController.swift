@@ -132,7 +132,7 @@ extension SelectCountryCodeViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         output?.numberOfRows() ?? 0
     }
-    
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let output = output else {
             return UITableViewCell()
