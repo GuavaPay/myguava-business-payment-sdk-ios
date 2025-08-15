@@ -1,13 +1,11 @@
 variables:
   PACKAGE_SCHEME: "MyGuavaPaymentSDK"
-  RELEASE_BRANCH: "release"
+  RELEASE_BRANCH: "github-release"
   GH_TARGET_BRANCH: "master"
-  # Optional: provide VERSION manually (x.y.z). If empty, the job will auto-bump patch.
-  VERSION: ""
 
 stages:
-#  - build
-#  - test
+  - build
+  - test
   - release
 
 default:
@@ -37,17 +35,17 @@ workflow:
       when: always
     - when: never
 
-#build_ios:
-#  stage: build
-#  script:
-#    - fastlane build_sdk
-#
-#test_ios:
-#  stage: test
-#  needs:
-#    - build_ios
-#  script:
-#    - fastlane test_sdk
+build_ios:
+  stage: build
+  script:
+    - fastlane build_sdk
+
+test_ios:
+  stage: test
+  needs:
+    - build_ios
+  script:
+    - fastlane test_sdk
 
 release_prepare:
   stage: release
@@ -57,8 +55,7 @@ release_prepare:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: manual
-    - when: always
-#    - when: never
+    - when: never
   script:
     - |
       set -euo pipefail
@@ -72,7 +69,11 @@ release_prepare:
       fi
 
       # Ensure git is ready
-      git fetch origin --prune --tags
+      # Clean all local tags (ignore if none), then sync tags from GitLab (origin)
+      git tag -l | xargs -r -n 1 git tag -d
+      git config fetch.prune true
+      git config fetch.pruneTags true
+      git fetch origin --prune "+refs/tags/*:refs/tags/*"
       git config user.name "${GITLAB_USER_NAME:-ci}"
       git config user.email "${GITLAB_USER_EMAIL:-ci@example.com}"
 
@@ -84,18 +85,10 @@ release_prepare:
         SKIP_GH=0
       fi
 
-      # Prepare GitHub remote (normalize GH_REPO and avoid leaking token in logs)
-      # Accept both 'github.com/owner/repo.git' and 'https://github.com/owner/repo.git'
-      if [[ "${GH_REPO}" =~ ^https?:// ]]; then
-        GH_URL="${GH_REPO}"
-      else
-        GH_URL="https://${GH_REPO}"
-      fi
-
       # Build authenticated URL by injecting credentials after 'https://'
       if [ "${DEBUG:-0}" = "1" ]; then set +x; fi
       git remote remove github 2>/dev/null || true
-      GH_AUTH_URL="${GH_URL/https:\/\//https:\/\/${GH_USERNAME}:${GH_TOKEN}@}"
+      GH_AUTH_URL="https://${GH_USERNAME}:${GH_TOKEN}@${GH_REPO}"
       git remote add github "${GH_AUTH_URL}"
       # Print sanitized remote for debugging
       SAN_GH_URL="$(printf '%s' "${GH_AUTH_URL}" | sed -E 's#(https://)[^:]+:[^@]+@#\1***:***@#')"
@@ -141,6 +134,8 @@ release_prepare:
       fi
 
       # Compute tag: use provided VERSION or auto-bump patch from last tag
+      echo "Version: ${VERSION}"
+      echo "Local tags: $(git tag --list)"
       if [ -n "${VERSION:-}" ]; then
         NEW_TAG="$VERSION"
       else
@@ -160,19 +155,23 @@ release_prepare:
       echo "Releasing ${NEW_TAG} from $(git rev-parse --short HEAD) on branch ${RELEASE_BRANCH}"
 
       # Push release branch and tag to GitLab
-      git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      git remote set-url origin "https://oauth2:${GL_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
       git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
       git push origin "${RELEASE_BRANCH}"
       git push origin "${NEW_TAG}"
 
-      if [ "$SKIP_GH" -eq 0 ]; then
+      echo "Release ${NEW_TAG} pushed to GitLab (${RELEASE_BRANCH} + tag)."
+
+      echo "$(git remote -v)"
+      echo "${SAN_GH_URL}"
+      if [ "$SKIP_GH" -eq 1 ]; then
         git remote remove github 2>/dev/null || true
       fi
       # Push release branch into GitHub master and the tag
-      # git push github "${RELEASE_BRANCH}:refs/heads/${GH_TARGET_BRANCH}"
+      git push github "${RELEASE_BRANCH}:refs/heads/${GH_TARGET_BRANCH}"
       git push github "${NEW_TAG}"
 
-      echo "Release ${NEW_TAG} pushed to GitLab (${RELEASE_BRANCH} + tag) and GitHub (${GH_TARGET_BRANCH} + tag)."
+      echo "Release ${NEW_TAG} pushed to GitHub (${GH_TARGET_BRANCH} + tag)."
   tags:
     - ios
   artifacts:
