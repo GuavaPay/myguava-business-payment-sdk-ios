@@ -8,9 +8,9 @@ variables:
 stages:
   - build
   - test
+  - helpers
   - version
   - release
-  - helpers
 
 default:
   tags:
@@ -29,11 +29,12 @@ cache:
 
 workflow:
   rules:
-    # Run MR pipelines when there is a merge request
+    # Start pipelines for Merge Request events (creation/updates and pushes to MR source branches)
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
-    # Run push pipelines only when there is NO open MR for the branch
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS == null'
+    # Start pipelines for pushes to target branches when an MR is merged (i.e., develop or master)
+    # NOTE: To ensure only MR merges trigger these, protect branches to disallow direct pushes.
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(develop|master)$/'
       when: always
     # Allow manual Web-triggered pipelines
     - if: '$CI_PIPELINE_SOURCE == "web"'
@@ -42,8 +43,7 @@ workflow:
 
 build_ios:
   stage: build
-  when: manual
-#  when: always
+  when: always
   script:
     - fastlane build_sdk
 
@@ -51,8 +51,7 @@ test_ios:
   stage: test
   needs:
     - build_ios
-  when: manual
-#  when: always
+  when: always
   script:
     - fastlane test_sdk
 
@@ -61,7 +60,7 @@ update_version:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "develop" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
       when: manual
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == "develop"'
       when: manual
     - when: never
   before_script:
@@ -88,7 +87,7 @@ publish_release:
   stage: release
   needs:
     - release_branch_update
-  when: manual
+#  when: manual
   allow_failure: false
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
