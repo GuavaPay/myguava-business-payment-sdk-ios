@@ -144,15 +144,23 @@ if [ "$GH_ENABLED" = "1" ]; then
     git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}" "${TAG_TARGET_SHA}"
   fi
 
-  if [ -n "${NEW_TAG:-}" ] && git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
-    echo "Pushing tag ${NEW_TAG} to GitHub"
-    git push github "refs/tags/${NEW_TAG}" || echo "Warning: GitHub tag push failed." >&2
-  fi
+#  if [ -n "${NEW_TAG:-}" ] && git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
+#    echo "Pushing tag ${NEW_TAG} to GitHub"
+#    git push github "refs/tags/${NEW_TAG}" || echo "Warning: GitHub tag push failed." >&2
+#  fi
 
   echo "Release ${NEW_TAG} pushed to GitHub."
 
+  # Auth for pushes (optional; falls back to read-only if missing)
+  if [ -n "${GL_TOKEN:-}" ]; then
+    git remote set-url origin "https://oauth2:${GL_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+  elif [ -n "${CI_JOB_TOKEN:-}" ]; then
+    git remote set-url origin "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+  fi
+
   if [ -n "${NEW_TAG:-}" ] && git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
     echo "Pushing tag ${NEW_TAG} to GitLab"
+    echo "$(git remote -v)"
     git push origin "refs/tags/${NEW_TAG}" || echo "Warning: GitLab tag push failed." >&2
   fi
 
