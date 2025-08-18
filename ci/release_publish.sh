@@ -70,7 +70,17 @@ if [ "$GH_ENABLED" = "1" ]; then
   fi
 
   echo "Pushing ${RELEASE_BRANCH} -> GitHub ${GH_TARGET_BRANCH}"
-  git push github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+  # Fetch remote target branch so --force-with-lease has the correct expectation
+  git fetch github "${GH_TARGET_BRANCH}" --depth=1 || true
+
+  if [ "${GH_FORCE_PUSH:-0}" = "1" ]; then
+    # Overwrite GitHub target branch with the snapshot (safe force using lease)
+    git push --force-with-lease github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+  else
+    # Attempt normal fast-forward push (will fail if histories diverged)
+    git push github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+  fi
+
   git branch -D "$PUBLISH_TMP" >/dev/null 2>&1 || true
 
   # Ensure the release tag points to TAG_TARGET_SHA; create if missing
