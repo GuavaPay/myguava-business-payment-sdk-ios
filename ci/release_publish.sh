@@ -3,6 +3,13 @@ set -euo pipefail
 
 echo "Starting release_publish job"
 
+# Clear local state
+git add .
+git reset --hard
+git tag -l | xargs git tag -d
+git checkout -B temp-branch
+git branch | grep -v "temp-branch" | xargs git branch -D
+
 git config user.name "${GITLAB_USER_NAME:-ci}"
 git config user.email "${GITLAB_USER_EMAIL:-ci@example.com}"
 
