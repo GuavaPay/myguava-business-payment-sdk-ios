@@ -70,8 +70,9 @@ if [ "$GH_ENABLED" = "1" ]; then
   fi
 
   echo "Pushing ${RELEASE_BRANCH} -> GitHub ${GH_TARGET_BRANCH}"
-  # Fetch remote target branch so --force-with-lease has the correct expectation
-  git fetch github "${GH_TARGET_BRANCH}" --depth=1 || true
+  # Ensure full history and tags to avoid thin-pack base missing on remote
+  git fetch origin "${RELEASE_BRANCH}" --prune --tags --depth=0 || true
+  git fetch github "${GH_TARGET_BRANCH}" --prune --depth=0 || true
 
   # Determine remote and local SHAs for safer logging and lease
   REMOTE_REF="refs/remotes/github/${GH_TARGET_BRANCH}"
@@ -90,16 +91,16 @@ if [ "$GH_ENABLED" = "1" ]; then
   set +e
   if [ "${GH_FORCE_PUSH_NORM}" = "1" ]; then
     if [ -n "${REMOTE_SHA}" ]; then
-      # Safe overwrite using explicit lease (only if remote head matches what we fetched)
-      git push --force-with-lease=${GH_TARGET_BRANCH}:${REMOTE_SHA} github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+      echo "Safe overwrite using explicit lease (only if remote head matches what we fetched)"
+      git push --no-thin --force-with-lease=${GH_TARGET_BRANCH}:${REMOTE_SHA} github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     else
-      # No remote head found (new branch on GitHub) — plain force is fine
-      git push --force github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+      echo "No remote head found (new branch on GitHub) — plain force is fine"
+      git push --no-thin --force github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     fi
     rc=$?
   else
-    # Try a normal fast-forward push
-    git push github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+    echo "Try a normal fast-forward push"
+    git push --no-thin github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     rc=$?
     if [ $rc -ne 0 ]; then
       echo "Non-fast-forward push rejected. Re-run with GH_FORCE_PUSH=1 (or 'true'/'yes') to overwrite GitHub ${GH_TARGET_BRANCH}." >&2
@@ -108,7 +109,7 @@ if [ "$GH_ENABLED" = "1" ]; then
   set -e
 
   if [ $rc -ne 0 ]; then
-    # Stop early to avoid tagging if branch push failed
+    echo "Stop early to avoid tagging if branch push failed"
     exit $rc
   fi
 
