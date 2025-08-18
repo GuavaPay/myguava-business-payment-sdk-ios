@@ -70,9 +70,16 @@ if [ "$GH_ENABLED" = "1" ]; then
   fi
 
   echo "Pushing ${RELEASE_BRANCH} -> GitHub ${GH_TARGET_BRANCH}"
-  # Ensure full history and tags to avoid thin-pack base missing on remote
-  git fetch origin "${RELEASE_BRANCH}" --prune --tags --depth=0 || true
-  git fetch github "${GH_TARGET_BRANCH}" --prune --depth=0 || true
+  # Ensure full history and tags to avoid thin-pack base missing on remote (Git-version safe)
+  if git rev-parse --is-shallow-repository 2>/dev/null | grep -q "true"; then
+    # Unshallow the whole repo so push can build a non-thin pack without missing bases
+    git fetch --unshallow --prune --tags || true
+  else
+    git fetch --prune --tags || true
+  fi
+  # Make sure we have the target branches locally for lease and ancestry checks
+  git fetch origin "${RELEASE_BRANCH}" --prune || true
+  git fetch github "${GH_TARGET_BRANCH}" --prune || true
 
   # Determine remote and local SHAs for safer logging and lease
   REMOTE_REF="refs/remotes/github/${GH_TARGET_BRANCH}"
@@ -92,15 +99,15 @@ if [ "$GH_ENABLED" = "1" ]; then
   if [ "${GH_FORCE_PUSH_NORM}" = "1" ]; then
     if [ -n "${REMOTE_SHA}" ]; then
       echo "Safe overwrite using explicit lease (only if remote head matches what we fetched)"
-      git push --no-thin --force-with-lease=${GH_TARGET_BRANCH}:${REMOTE_SHA} github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+      git -c pack.useThin=false push --no-thin --force-with-lease=${GH_TARGET_BRANCH}:${REMOTE_SHA} github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     else
       echo "No remote head found (new branch on GitHub) — plain force is fine"
-      git push --no-thin --force github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+      git -c pack.useThin=false push --no-thin --force github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     fi
     rc=$?
   else
     echo "Try a normal fast-forward push"
-    git push --no-thin github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+    git -c pack.useThin=false push --no-thin github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
     rc=$?
     if [ $rc -ne 0 ]; then
       echo "Non-fast-forward push rejected. Re-run with GH_FORCE_PUSH=1 (or 'true'/'yes') to overwrite GitHub ${GH_TARGET_BRANCH}." >&2
