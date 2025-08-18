@@ -73,12 +73,43 @@ if [ "$GH_ENABLED" = "1" ]; then
   # Fetch remote target branch so --force-with-lease has the correct expectation
   git fetch github "${GH_TARGET_BRANCH}" --depth=1 || true
 
-  if [ "${GH_FORCE_PUSH:-0}" = "1" ]; then
-    # Overwrite GitHub target branch with the snapshot (safe force using lease)
-    git push --force-with-lease github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+  # Determine remote and local SHAs for safer logging and lease
+  REMOTE_REF="refs/remotes/github/${GH_TARGET_BRANCH}"
+  REMOTE_SHA=$(git rev-parse -q --verify "${REMOTE_REF}" 2>/dev/null || echo "")
+  LOCAL_SHA=$(git rev-parse -q --verify "${PUBLISH_TMP}" 2>/dev/null || echo "")
+  echo "Local ${PUBLISH_TMP}=${LOCAL_SHA}"
+  echo "Remote ${GH_TARGET_BRANCH}@github=${REMOTE_SHA:-<none>}"
+
+  # Normalize truthy values for GH_FORCE_PUSH (accept 1/true/yes/on)
+  GH_FORCE_PUSH_NORM=0
+  case "${GH_FORCE_PUSH:-0}" in
+    1|true|TRUE|yes|YES|on|ON) GH_FORCE_PUSH_NORM=1 ;;
+    *) GH_FORCE_PUSH_NORM=0 ;;
+  esac
+
+  set +e
+  if [ "${GH_FORCE_PUSH_NORM}" = "1" ]; then
+    if [ -n "${REMOTE_SHA}" ]; then
+      # Safe overwrite using explicit lease (only if remote head matches what we fetched)
+      git push --force-with-lease=${GH_TARGET_BRANCH}:${REMOTE_SHA} github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+    else
+      # No remote head found (new branch on GitHub) — plain force is fine
+      git push --force github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+    fi
+    rc=$?
   else
-    # Attempt normal fast-forward push (will fail if histories diverged)
+    # Try a normal fast-forward push
     git push github "$PUBLISH_TMP:refs/heads/${GH_TARGET_BRANCH}"
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      echo "Non-fast-forward push rejected. Re-run with GH_FORCE_PUSH=1 (or 'true'/'yes') to overwrite GitHub ${GH_TARGET_BRANCH}." >&2
+    fi
+  fi
+  set -e
+
+  if [ $rc -ne 0 ]; then
+    # Stop early to avoid tagging if branch push failed
+    exit $rc
   fi
 
   git branch -D "$PUBLISH_TMP" >/dev/null 2>&1 || true
