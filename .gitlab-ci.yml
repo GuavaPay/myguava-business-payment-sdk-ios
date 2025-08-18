@@ -10,6 +10,7 @@ stages:
   - test
   - version
   - release
+  - helpers
 
 default:
   tags:
@@ -68,7 +69,7 @@ update_version:
   script:
     - bash ci/update_version.sh
 
-update_release_branch:
+release_branch_update:
   stage: release
   when: manual
   allow_failure: false
@@ -77,42 +78,38 @@ update_release_branch:
       when: manual
     - when: never
   before_script:
-    - chmod +x ci/update_release_branch.sh
+    - chmod +x ci/release_branch_update.sh
   script:
-    - bash ci/update_release_branch.sh
+    - bash ci/release_branch_update.sh
+  tags:
+    - ios
+
+publish_release:
+  stage: release
+  needs:
+    - release_branch_update
+  when: manual
+  allow_failure: false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+    - when: never
+  before_script:
+    - chmod +x ci/publish_release.sh
+  script:
+    - bash ci/publish_release.sh
   tags:
     - ios
 
 fix_release_branch:
-  stage: release
+  stage: helpers
   when: manual
-  allow_failure: false
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: manual
-    - when: never
+  allow_failure: true
   script:
-    - git fetch origin
-    - git checkout ${RELEASE_BRANCH}
-    - git status
-    - git reset --hard origin/${RELEASE_BRANCH}
-    - git status
-  tags:
-    - ios
-
-release_publish:
-  stage: release
-  needs:
-    - update_release_branch
-  when: manual
-  allow_failure: false
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: manual
-    - when: never
-  before_script:
-    - chmod +x ci/release_publish.sh
-  script:
-    - bash ci/release_publish.sh
+    - git add .
+    - git reset --hard
+    - git tag -l | xargs git tag -d
+    - git checkout -B temp-branch
+    - git branch | grep -v "temp-branch" | xargs git branch -D
   tags:
     - ios

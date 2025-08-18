@@ -55,6 +55,13 @@ update_version_file() {
 
 ### --- Main ---
 
+# Optional debug traces (set DEBUG=1 in job variables to enable)
+if [ "${DEBUG:-0}" = "1" ]; then
+  set -x
+  export GIT_TRACE=1
+  export GIT_CURL_VERBOSE=1
+fi
+
 echo "Starting update_version job on ${CI_COMMIT_REF_NAME:-detached}"
 
 git config user.name "${GITLAB_USER_NAME:-ci}"
