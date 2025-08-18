@@ -6,5 +6,5 @@
 //
 
 enum SDK {
-    static let version = "0.0.8"
+    static let version = "0.0.11"
 }

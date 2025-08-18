@@ -2,10 +2,13 @@ variables:
   PACKAGE_SCHEME: "MyGuavaPaymentSDK"
   RELEASE_BRANCH: "github-release"
   GH_TARGET_BRANCH: "master"
+  TAG_TARGET_SHA: ""
+  DEBUG: 1
 
 stages:
   - build
   - test
+  - version
   - release
 
 default:
@@ -25,18 +28,21 @@ cache:
 
 workflow:
   rules:
+    # Run MR pipelines when there is a merge request
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    # Run push pipelines only when there is NO open MR for the branch
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS == null'
       when: always
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS == null'
-      when: always
+    # Allow manual Web-triggered pipelines
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
     - when: never
 
 build_ios:
   stage: build
+  when: manual
+#  when: always
   script:
     - fastlane build_sdk
 
@@ -44,12 +50,41 @@ test_ios:
   stage: test
   needs:
     - build_ios
+  when: manual
+#  when: always
   script:
     - fastlane test_sdk
 
-release_prepare:
+update_version:
+  stage: version
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "develop" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: manual
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+      when: manual
+    - when: never
+  before_script:
+    - chmod +x ci/update_version.sh
+  script:
+    - bash ci/update_version.sh
+
+update_release_branch:
   stage: release
-  needs: []
+  when: manual
+  allow_failure: false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+    - when: never
+  before_script:
+    - chmod +x ci/update_release_branch.sh
+  script:
+    - bash ci/update_release_branch.sh
+  tags:
+    - ios
+
+fix_release_branch:
+  stage: release
   when: manual
   allow_failure: false
   rules:
@@ -57,125 +92,27 @@ release_prepare:
       when: manual
     - when: never
   script:
-    - |
-      set -euo pipefail
-      echo "Starting manual release from commit: $CI_COMMIT_SHA"
-
-      # Optional debug traces (set DEBUG=1 in job variables to enable)
-      if [ "${DEBUG:-0}" = "1" ]; then
-        set -x
-        export GIT_TRACE=1
-        export GIT_CURL_VERBOSE=1
-      fi
-
-      # Ensure git is ready
-      # Clean all local tags (ignore if none), then sync tags from GitLab (origin)
-      git tag -l | xargs -r -n 1 git tag -d
-      git config fetch.prune true
-      git config fetch.pruneTags true
-      git fetch origin --prune "+refs/tags/*:refs/tags/*"
-      git config user.name "${GITLAB_USER_NAME:-ci}"
-      git config user.email "${GITLAB_USER_EMAIL:-ci@example.com}"
-
-      # Validate required GitHub vars
-      if [ -z "${GH_REPO:-}" ] || [ -z "${GH_USERNAME:-}" ] || [ -z "${GH_TOKEN:-}" ]; then
-        echo "GH vars are missing — skipping GitHub push and continuing with GitLab only."
-        SKIP_GH=1
-      else
-        SKIP_GH=0
-      fi
-
-      # Build authenticated URL by injecting credentials after 'https://'
-      if [ "${DEBUG:-0}" = "1" ]; then set +x; fi
-      git remote remove github 2>/dev/null || true
-      GH_AUTH_URL="https://${GH_USERNAME}:${GH_TOKEN}@${GH_REPO}"
-      git remote add github "${GH_AUTH_URL}"
-      # Print sanitized remote for debugging
-      SAN_GH_URL="$(printf '%s' "${GH_AUTH_URL}" | sed -E 's#(https://)[^:]+:[^@]+@#\1***:***@#')"
-      echo "Configured GitHub remote: ${SAN_GH_URL}"
-      if [ "${DEBUG:-0}" = "1" ]; then set -x; fi
-
-      # Checkout or create the release branch
-      if git ls-remote --exit-code --heads origin "${RELEASE_BRANCH}" >/dev/null 2>&1; then
-        git checkout -B "${RELEASE_BRANCH}" "origin/${RELEASE_BRANCH}"
-      else
-        git checkout -b "${RELEASE_BRANCH}"
-      fi
-
-      # Cherry-pick current master commit onto release (auto-resolve CI file conflicts)
-      PARENTS=$(git rev-list --parents -n 1 "$CI_COMMIT_SHA")
-      PCOUNT=$(echo "$PARENTS" | wc -w | tr -d ' ')
-
-      set +e
-      if [ "$PCOUNT" -eq 3 ]; then
-        git cherry-pick -m 1 "$CI_COMMIT_SHA"
-      else
-        git cherry-pick "$CI_COMMIT_SHA"
-      fi
-      rc=$?
-      set -e
-
-      if [ $rc -ne 0 ]; then
-        # If conflict touches the CI file, prefer state from release branch (ours)
-        if git diff --name-only --diff-filter=U | grep -qx ".gitlab-ci.yml"; then
-          echo "Auto-resolving conflict in .gitlab-ci.yml: keep release branch version"
-          # Try keep ours; if ours was deletion, remove file
-          git checkout --ours .gitlab-ci.yml 2>/dev/null || true
-          if [ -e .gitlab-ci.yml ]; then
-            git add .gitlab-ci.yml
-          else
-            git rm -f .gitlab-ci.yml || true
-          fi
-          git cherry-pick --continue
-        else
-          echo "Cherry-pick failed with non-CI conflict(s)." >&2
-          exit $rc
-        fi
-      fi
-
-      # Compute tag: use provided VERSION or auto-bump patch from last tag
-      echo "Version: ${VERSION}"
-      echo "Local tags: $(git tag --list)"
-      if [ -n "${VERSION:-}" ]; then
-        NEW_TAG="$VERSION"
-      else
-        LAST_TAG=$(git tag --list --sort=-v:refname | head -n1)
-        if [ -z "$LAST_TAG" ]; then LAST_TAG="0.0.0"; fi
-        IFS='.' read -r MA MI PA <<< "$LAST_TAG"
-        : "${MA:=0}"; : "${MI:=0}"; : "${PA:=0}"
-        PA=$((PA+1))
-        NEW_TAG="${MA}.${MI}.${PA}"
-      fi
-
-      if git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
-        echo "Tag ${NEW_TAG} already exists. Aborting." >&2
-        exit 1
-      fi
-
-      echo "Releasing ${NEW_TAG} from $(git rev-parse --short HEAD) on branch ${RELEASE_BRANCH}"
-
-      # Push release branch and tag to GitLab
-      git remote set-url origin "https://oauth2:${GL_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-      git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
-      git push origin "${RELEASE_BRANCH}"
-      git push origin "${NEW_TAG}"
-
-      echo "Release ${NEW_TAG} pushed to GitLab (${RELEASE_BRANCH} + tag)."
-
-      echo "$(git remote -v)"
-      echo "${SAN_GH_URL}"
-      if [ "$SKIP_GH" -eq 1 ]; then
-        git remote remove github 2>/dev/null || true
-      fi
-      # Push release branch into GitHub master and the tag
-      git push github "${RELEASE_BRANCH}:refs/heads/${GH_TARGET_BRANCH}"
-      git push github "${NEW_TAG}"
-
-      echo "Release ${NEW_TAG} pushed to GitHub (${GH_TARGET_BRANCH} + tag)."
+    - git fetch origin
+    - git checkout ${RELEASE_BRANCH}
+    - git status
+    - git reset --hard origin/${RELEASE_BRANCH}
+    - git status
   tags:
     - ios
-  artifacts:
-    when: always
-    reports:
-      dotenv: []
-    expire_in: 1 day
+
+release_publish:
+  stage: release
+  needs:
+    - update_release_branch
+  when: manual
+  allow_failure: false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+    - when: never
+  before_script:
+    - chmod +x ci/release_publish.sh
+  script:
+    - bash ci/release_publish.sh
+  tags:
+    - ios
