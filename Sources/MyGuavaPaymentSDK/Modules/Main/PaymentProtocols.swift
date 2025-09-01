@@ -51,6 +51,7 @@ protocol PaymentViewOutput {
     func didChangeSavedCardCVV(_ indexPath: IndexPath, code: String)
     func didTapContactInformationSaveButton(phoneNumber: String, email: String)
     func didTapChangeInfo(editing: Bool)
+    func userDidTapClose(confirmAction: @escaping () -> Void)
 }
 
 protocol PaymentInteractorInput {
@@ -115,5 +116,8 @@ protocol PaymentRouterInput: Router {
         title: String,
         subtitle: String,
         cancelAction: @escaping () -> Void
+    )
+    func showClosePaymentPopup(
+        confirmAction: @escaping () -> Void
     )
 }

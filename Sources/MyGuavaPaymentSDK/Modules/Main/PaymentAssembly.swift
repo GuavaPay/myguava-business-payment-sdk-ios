@@ -206,21 +206,22 @@ public final class PaymentAssembly {
     /// - Returns: A ready-to-use `UIViewController` for the payment flow.
     public static func assemble(_ config: PaymentConfig, _ delegate: PaymentDelegate?) -> UIViewController {
         SentryFacade.shared.startSession(environment: config.environment, assertOnErrors: false)
+        SentryFacade.shared.addContext(SentryFacade.Context.orderIdKey, value: config.orderId)
 
-        let orderService = OrderService()
-
+        let orderService = OrderServiceImpl()
         let pollingWorker = OrderStatusPollingWorker(
             orderService: orderService,
             orderId: config.orderId
         )
-        let socketWorker = OrderStatusSocketWorker(
-            orderId: config.orderId,
+
+        let wsEnvironment = WSEnvironment(rawValue: config.environment.rawValue) ?? .sandbox
+        let webSocketClient = WebSocketClientImpl(
+            environment: wsEnvironment,
             token: config.sessionToken,
-            queryItems: [
-                .init(name: "payment-requirements-included", value: "true"),
-                .init(name: "transactions-included", value: "true")
-            ]
+            orderId: config.orderId
         )
+        let socketWorker = OrderStatusSocketWorker(webSocketClient: webSocketClient)
+
         let orderStatusWorker = OrderStatusWorker(pollingWorker: pollingWorker, socketWorker: socketWorker)
 
         let applePayManager = ApplePayManager(orderService: orderService, orderId: config.orderId)
@@ -231,12 +232,12 @@ public final class PaymentAssembly {
         let interactor = PaymentInteractor(
             config: config,
             applePayManager: applePayManager,
-            orderService: OrderService(),
+            orderService: orderService,
             threeDS2Service: GPTDSThreeDS2Service(),
             statusReceiver: statusReceiver,
-            applePayService: ApplePayService(),
-            bindingService: BindingsService(),
-            resolveCardService: ResolveCardService(),
+            applePayService: ApplePayServiceImpl(),
+            bindingService: BindingsServiceImpl(),
+            resolveCardService: ResolveCardServiceImpl(),
             orderStatusWorker: orderStatusWorker
         )
         let viewController = PaymentViewController()

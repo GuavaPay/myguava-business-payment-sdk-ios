@@ -7,37 +7,22 @@
 
 import Foundation
 
-struct BindingsEndpoint: APIEndpoint {
-    let path = "bindings"
-    let method: HTTPMethod = .get
-    var queryItems: [URLQueryItem]? = nil
-    var body: [String: Any]? = nil
+protocol BindingsService {
+    func getBindings(completion: @escaping (Result<APIResponse<Bindings>, APIError>) -> Void)
+
+    func renameBinding(
+        bindingId: String,
+        name: String,
+        completion: @escaping (Result<APIResponse<Binding>, APIError>) -> Void
+    )
+
+    func deleteBinding(
+        bindingId: String,
+        completion: @escaping (Result<APIResponse<String>, APIError>) -> Void
+    )
 }
 
-struct RenameBindingEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .patch
-    var queryItems: [URLQueryItem]? = nil
-    var body: [String: Any]? = nil
-
-    init(bindingId: String, body: [String : Any]? = nil) {
-        self.path = "binding/\(bindingId)"
-        self.body = body
-    }
-}
-
-struct DeleteBindingEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .delete
-    var queryItems: [URLQueryItem]? = nil
-    var body: [String: Any]? = nil
-
-    init(bindingId: String) {
-        self.path = "binding/\(bindingId)"
-    }
-}
-
-struct BindingsService {
+struct BindingsServiceImpl: BindingsService {
     private let api: APIClient
 
     init(api: APIClient = .shared) {
@@ -67,6 +52,7 @@ struct BindingsService {
             endpoint: DeleteBindingEndpoint(bindingId: bindingId),
             responseModel: String.self,
             acceptEmptyResponseCodes: [204],
+            allowedErrorCodes: [404],
             completion: completion
         )
     }

@@ -82,6 +82,7 @@ final class APIClient {
         endpoint: APIEndpoint,
         responseModel: T.Type = T.self,
         acceptEmptyResponseCodes: Set<Int> = [204],
+        allowedErrorCodes: Set<Int> = [],
         completion: @escaping (Result<APIResponse<T>, APIError>) -> Void
     ) {
         do {
@@ -130,7 +131,9 @@ final class APIClient {
 
                     default:
                         let error = APIError.httpError(statusCode: statusCode, data: data)
-                        SentryFacade.shared.capture(apiError: error, headers: httpResponse.allHeaderFields)
+                        if !allowedErrorCodes.contains(statusCode) {
+                            SentryFacade.shared.capture(apiError: error, headers: httpResponse.allHeaderFields)
+                        }
                         completion(.failure(error))
                     }
                 }

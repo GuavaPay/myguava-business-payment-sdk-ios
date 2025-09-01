@@ -30,6 +30,15 @@ enum PaymentMethodRequest: Encodable {
 
         return try request.encode(to: encoder)
     }
+
+    var typeName: String {
+        switch self {
+        case .paymentCardMethod(let data):
+            data.type.rawValue
+        case .paymentCardBinding(let data):
+            data.type.rawValue
+        }
+    }
 }
 
 enum ChallengeWindowSize: String, Encodable {

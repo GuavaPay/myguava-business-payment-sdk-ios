@@ -125,6 +125,47 @@ extension PaymentRouter: PaymentRouterInput {
         rootController?.presentController(popup)
     }
 
+    func showClosePaymentPopup(
+        confirmAction: @escaping () -> Void
+    ) {
+        let continueButton = Button(
+            config: Button.Config(
+                type: .text("Continue Payment"),
+                state: .enabled,
+                scheme: .primary,
+                size: .large
+            )
+        )
+        let cancelButton = Button(
+            config: Button.Config(
+                type: .text("Cancel Payment"),
+                state: .enabled,
+                scheme: .secondary,
+                size: .large
+            )
+        )
+
+        let config = PopupConfig(
+            title: "Are you sure you want to cancel the payment?",
+            message: "Closing now will cancel your payment and discard entered data. Proceed?",
+            buttons: [
+                continueButton,
+                cancelButton
+            ]
+        )
+        let popup = PopupAssembly.assemble(config: config)
+
+        continueButton.setAction {
+            popup.dismiss(animated: true)
+        }
+        cancelButton.setAction {
+            popup.dismiss(animated: true)
+            confirmAction()
+        }
+
+        rootController?.presentController(popup)
+    }
+
     func showErrorConnectionPopup(
         title: String,
         subtitle: String,

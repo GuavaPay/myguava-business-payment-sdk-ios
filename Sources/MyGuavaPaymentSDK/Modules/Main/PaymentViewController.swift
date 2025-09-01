@@ -408,10 +408,17 @@ public final class PaymentViewController: UIViewController, PaymentViewInput {
     }
 
     private func handleDismissView() {
-        // Need for correct update layout height
-        isFirstShow = true
-        output?.didCloseViewByUser()
-        animateDismissView()
+        // Return bottom sheet to regular state before popup
+        UIView.animate(withDuration: 0.5) {
+            self.containerView.transform = .identity
+        }
+
+        output?.userDidTapClose { [weak self] in
+            // Need for correct update layout height
+            self?.isFirstShow = true
+            self?.output?.didCloseViewByUser()
+            self?.animateDismissView()
+        }
     }
 
     @objc

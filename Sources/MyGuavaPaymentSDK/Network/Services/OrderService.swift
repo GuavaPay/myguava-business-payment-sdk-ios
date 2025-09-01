@@ -7,43 +7,23 @@
 
 import Foundation
 
-struct GetOrderEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .get
-    var queryItems: [URLQueryItem]? = nil
-    let body: [String: Any]? = nil
+protocol OrderService {
+    func getOrder(byId orderId: String, completion: @escaping (Result<APIResponse<GetOrder>, APIError>) -> Void)
 
-    init(orderId: String, queryItems: [URLQueryItem]) {
-        self.path = "order/\(orderId)"
-        self.queryItems = queryItems
-    }
+    func executePayment(
+        orderId: String,
+        body: [String: Any],
+        completion: @escaping (Result<APIResponse<ExecutePaymentRequirements>, APIError>) -> Void
+    )
+
+    func continuePayment(
+        orderId: String,
+        body: [String: Any],
+        completion: @escaping (Result<APIResponse<ExecutePaymentRequirements>, APIError>) -> Void
+    )
 }
 
-struct ExecutePaymentEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .post
-    let queryItems: [URLQueryItem]? = nil
-    let body: [String: Any]?
-
-    init(orderId: String, body: [String: Any]) {
-        self.path = "order/\(orderId)/payment/execute"
-        self.body = body
-    }
-}
-
-struct ContinuePaymentEndpoint: APIEndpoint {
-    let path: String
-    let method: HTTPMethod = .post
-    let queryItems: [URLQueryItem]? = nil
-    let body: [String: Any]?
-
-    init(orderId: String, body: [String: Any]) {
-        self.path = "order/\(orderId)/payment/continue"
-        self.body = body
-    }
-}
-
-struct OrderService {
+struct OrderServiceImpl: OrderService {
     private let api: APIClient
 
     init(api: APIClient = .shared) {

@@ -19,10 +19,9 @@ final class OrderStatusPollingWorker: OrderStatusPoolingWorkerProtocol {
 
     private let orderService: OrderService
     private let orderId: String
-
-    private let pollInterval: TimeInterval = 10
-    private let retryInterval: TimeInterval = 2
-    private let retryCount = 5
+    private let pollInterval: TimeInterval
+    private let retryInterval: TimeInterval
+    private let retryCount: Int
 
     private var currentRetryCount = 0
 
@@ -31,10 +30,16 @@ final class OrderStatusPollingWorker: OrderStatusPoolingWorkerProtocol {
 
     init(
         orderService: OrderService,
-        orderId: String
+        orderId: String,
+        pollInterval: TimeInterval = 10,
+        retryInterval: TimeInterval = 2,
+        retryCount: Int = 5
     ) {
         self.orderService = orderService
         self.orderId = orderId
+        self.pollInterval = pollInterval
+        self.retryInterval = retryInterval
+        self.retryCount = retryCount
     }
 
     /// Start polling loop

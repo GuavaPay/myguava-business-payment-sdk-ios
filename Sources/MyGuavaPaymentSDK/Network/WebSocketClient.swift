@@ -18,7 +18,18 @@ public enum WSEnvironment: String {
     }
 }
 
-final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
+protocol WebSocketClient: URLSessionWebSocketDelegate {
+    var isConnected: Bool { get }
+
+    func startListening(
+        onEvent: @escaping (String) -> Void,
+        onFailure: ((APIError) -> Void)?
+    )
+
+    func stopListening()
+}
+
+final class WebSocketClientImpl: NSObject, WebSocketClient {
 
     var isConnected: Bool {
         pingTimer != nil
@@ -47,12 +58,15 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     init(
         environment: WSEnvironment,
         token: String,
-        endpoint: String,
-        queryItems: [URLQueryItem]? = nil
+        orderId: String,
+        queryItems: [URLQueryItem]? = [
+            .init(name: "payment-requirements-included", value: "true"),
+            .init(name: "transactions-included", value: "true")
+        ]
     ) {
         self.environment = environment
         self.token = token
-        self.endpoint = endpoint
+        self.endpoint = "/order/\(orderId)"
         self.queryItems = queryItems
     }
 
@@ -109,7 +123,7 @@ final class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
 
 // MARK: - Private
 
-private extension WebSocketClient {
+private extension WebSocketClientImpl {
     func listen() {
         webSocketTask?.receive { [weak self] result in
             guard let self else { return }
@@ -204,7 +218,7 @@ private extension WebSocketClient {
     }
 }
 
-extension WebSocketClient: URLSessionDelegate {
+extension WebSocketClientImpl: URLSessionDelegate {
     func urlSession(
         _ session: URLSession,
         didReceive challenge: URLAuthenticationChallenge,

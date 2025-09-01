@@ -21,27 +21,11 @@ final class OrderStatusSocketWorker: OrderStatusSocketWorkerProtocol {
     }
 
     private let webSocketClient: WebSocketClient
-    private let environment: WSEnvironment
-    private let token: String
-    private let endpoint: String
-    private let queryItems: [URLQueryItem]?
 
     init(
-        environment: WSEnvironment = .sandbox,
-        orderId: String,
-        token: String,
-        queryItems: [URLQueryItem]? = nil
+        webSocketClient: WebSocketClient
     ) {
-        self.environment = environment
-        self.token = token
-        self.endpoint = "/order/\(orderId)"
-        self.queryItems = queryItems
-        self.webSocketClient = WebSocketClient(
-            environment: environment,
-            token: token,
-            endpoint: endpoint,
-            queryItems: queryItems
-        )
+        self.webSocketClient = webSocketClient
     }
 
     func startListening(
@@ -78,5 +62,3 @@ final class OrderStatusSocketWorker: OrderStatusSocketWorkerProtocol {
         webSocketClient.stopListening()
     }
 }
-
-

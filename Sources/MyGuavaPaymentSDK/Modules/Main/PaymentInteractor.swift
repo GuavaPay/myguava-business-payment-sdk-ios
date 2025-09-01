@@ -213,6 +213,8 @@ final class PaymentInteractor: PaymentInteractorInput {
 
 private extension PaymentInteractor {
     func handleOrderSuccess(_ response: GetOrder) {
+        SentryFacade.shared.addContext(SentryFacade.Context.merchantNameKey, value: response.merchant?.name)
+
         loadAdditionalOrderData(getOrder: response) { [weak self] appleCardSchemes, bindings in
             guard let self else { return }
             let paymentDTO = self.paymentWorker.buildPaymentDTO(
@@ -324,6 +326,10 @@ private extension PaymentInteractor {
             packedSdkDataString = dataString
         }
 
+        // PackedSDK is a long string.
+        // Send it as array so it will appear collapsed at Sentry WEB
+        SentryFacade.shared.addContext(SentryFacade.Context.deviceDataKey, value: [packedSdkDataString])
+
         let bodyModel = ContinuePaymentRequest(
             threedsSdkData: PackedAuthenticationData(packedAuthenticationData: packedSdkDataString),
             payPalOrderApproveEvent: nil
@@ -401,8 +407,7 @@ private extension PaymentInteractor {
         paymentMethod: PaymentMethodRequest,
         newCardName: String?,
         contactInfo: ContactInfo?,
-        saveCard: Bool,
-        packedSdkDataString: String? = nil
+        saveCard: Bool
     ) -> ExecutePaymentRequest {
         let contactPhone = ContactPhone(
             countryCode: contactInfo?.countryCode.map { $0.replacingOccurrences(of: "+", with: "") },
@@ -414,7 +419,7 @@ private extension PaymentInteractor {
             deviceData: DeviceDataRequest(
                 browserData: nil,
                 ip: nil,
-                threedsSdkData: ThreedsSdkData(packedAuthenticationData: packedSdkDataString)
+                threedsSdkData: ThreedsSdkData(packedAuthenticationData: nil)
             ),
             bindingCreationIsNeeded: saveCard,
             bindingName: newCardName,
@@ -522,8 +527,8 @@ private extension PaymentInteractor {
 // MARK: - PaymentStatusReceiverDelegate
 
 extension PaymentInteractor: PaymentStatusReceiverDelegate {
-    func didCompleteChallenge(withSuccess: Bool) {
-        print("Payment completed with: \(withSuccess)")
+    func didCompleteChallenge(withSuccess _: Bool) {
+        orderStatusWorker.fetchOrderStatusNow()
     }
 
     func didCancelChallenge() {
@@ -604,7 +609,7 @@ extension PaymentInteractor: ApplePayManagerDelegate {
         switch result {
         case .success:
             output?.showLoading()
-            listenOrderStatus()
+            orderStatusWorker.fetchOrderStatusNow()
         case .failure(let errorType):
             switch errorType {
             case .deviceNotSupported:

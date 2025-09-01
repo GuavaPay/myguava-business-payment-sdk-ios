@@ -59,7 +59,8 @@ platform :ios do
          "-scheme '#{@scheme}' " \
          "-destination '#{@destination}' " \
          "-skipPackagePluginValidation -skipMacroValidation " \
-         "-resultBundlePath fastlane/build/build.xcresult"
+         "-resultBundlePath fastlane/build/build.xcresult " \
+         "2>&1 | ( if command -v xcbeautify >/dev/null; then xcbeautify --is-ci --disable-colored-output --quiet; else cat; fi ) | tee fastlane/build/xcodebuild-build.log"
     end
   end
 
@@ -72,11 +73,14 @@ platform :ios do
       FileUtils.rm_rf(test_result_bundle)
       FileUtils.rm_f(test_log)
 
-      sh "set -o pipefail && xcodebuild test " \
+      sh "set -o pipefail && xcodebuild -quiet test " \
          "-scheme '#{@scheme}' " \
          "-destination '#{@destination}' " \
          "-skipPackagePluginValidation -skipMacroValidation " \
-         "-resultBundlePath fastlane/build/test.xcresult | tee fastlane/build/xcodebuild-test.log"
+         "-resultBundlePath fastlane/build/test.xcresult " \
+         "2>&1 | ( if command -v xcbeautify >/dev/null; then xcbeautify --is-ci --disable-colored-output --quiet; else cat; fi ) " \
+         "| egrep -v '^(cd |Cd |builtin-copy|CpResource|MkDir |CompileAssetCatalogVariant|/bin/mkdir|/Applications/Xcode.app/Contents/Developer/usr/bin/actool)' " \
+         "| tee fastlane/build/xcodebuild-test.log"
     end
   end
 

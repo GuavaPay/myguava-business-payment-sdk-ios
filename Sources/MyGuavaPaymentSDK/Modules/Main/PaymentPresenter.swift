@@ -63,6 +63,10 @@ final class PaymentPresenter: PaymentViewOutput {
     }
 
     func didTapApplePay() {
+        SentryFacade.shared.addContext(
+            SentryFacade.Context.paymentMethodKey,
+            value: OrderPaymentMethod.applePay.rawValue
+        )
         interactor.payApple()
     }
 
@@ -195,6 +199,10 @@ final class PaymentPresenter: PaymentViewOutput {
             )
         }
 
+        SentryFacade.shared.addContext(
+            SentryFacade.Context.paymentMethodKey,
+            value: paymentMethod.typeName
+        )
         interactor.executePayment(
             paymentMethod: paymentMethod,
             newCardName: cardInfo.newCardName,
@@ -254,6 +262,10 @@ final class PaymentPresenter: PaymentViewOutput {
         )
 
         view?.setCurrentContactInformation(paymentViewModel?.payer)
+    }
+
+    func userDidTapClose(confirmAction: @escaping () -> Void) {
+        router.showClosePaymentPopup(confirmAction: confirmAction)
     }
 }
 

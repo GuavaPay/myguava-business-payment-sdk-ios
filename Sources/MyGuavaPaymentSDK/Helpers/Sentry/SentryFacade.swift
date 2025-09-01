@@ -11,6 +11,9 @@ final class SentryFacade {
     static let shared = SentryFacade()
 
     private var needAssertOnErrors = false
+    private var capturedErrors: Set<String> = []
+
+    private var paymentDetailsContext = [String: Any]()
 
     func startSession(environment: GPEnvironment, assertOnErrors: Bool) {
         needAssertOnErrors = assertOnErrors
@@ -31,15 +34,28 @@ final class SentryFacade {
         }
 
         SentrySDK.configureScope { scope in
-            scope.setTag(value: SDK.version, key: "myguava_psdk_version")
+            scope.setTag(value: SDK.version, key: Tags.psdkVersionKey)
+        }
+    }
+
+    func addTag(_ key: String, value: String?) {
+        SentrySDK.configureScope { scope in
+            scope.setTag(value: value ?? "null", key: key)
+        }
+    }
+
+    func addContext(_ key: String, value: Any) {
+        paymentDetailsContext[key] = value
+
+        SentrySDK.configureScope { [weak self] scope in
+            guard let self else { return }
+
+            scope.setContext(value: paymentDetailsContext, key: Context.rootKey)
         }
     }
 
     func capture(error: SentryError) {
-        SentrySDK.capture(error: error)
-
-        guard needAssertOnErrors else { return }
-        assertionFailure(error.localizedDescription)
+        captureIfNeeded(error: error, headers: nil)
     }
 
     func capture(
@@ -47,7 +63,60 @@ final class SentryFacade {
         source: APIError.Source = .httpRequest,
         headers: [AnyHashable: Any]? = nil
     ) {
-        let sentryError: SentryError = switch source {
+        let sentryError = getSentryError(from: apiError, source: source)
+        captureIfNeeded(error: sentryError, headers: headers)
+    }
+
+    func capture(warning: SentryEvent) {
+        var warningEvent = Event(level: .warning)
+        warningEvent.message = SentryMessage(formatted: "Unknown API error")
+        warningEvent.error = APIError.unknown(warning)
+
+        SentrySDK.capture(event: warningEvent)
+    }
+
+    func capture(message: String) {
+        SentrySDK.capture(message: message)
+    }
+
+    // MARK: - Private Methods
+
+    private func getEnvironment(from environment: GPEnvironment) -> String {
+        environment.rawValue
+    }
+
+    private func getRequestId(headers: [AnyHashable: Any]?) -> String? {
+        let typeCastedHeaders = headers as? [String: Any]
+        return typeCastedHeaders?[Constants.requestIdHeaderKey] as? String
+    }
+
+    private func captureIfNeeded(error: SentryError, headers: [AnyHashable: Any]?) {
+        guard shouldCapture(error) else {
+            return
+        }
+
+        capturedErrors.insert(error.localizedDescription)
+        SentrySDK.capture(error: error) { [weak self] scope in
+            scope.setTag(
+                value: self?.getRequestId(headers: headers) ?? "null",
+                key: Tags.requestIdKey
+            )
+        }
+
+        guard needAssertOnErrors else { return }
+        assertionFailure(error.localizedDescription)
+    }
+
+    private func shouldCapture(_ error: SentryError) -> Bool {
+        guard Constants.singleReportErrors.contains(error.localizedDescription) else {
+            return true
+        }
+
+        return !capturedErrors.contains(error.localizedDescription)
+    }
+
+    private func getSentryError(from apiError: APIError, source: APIError.Source) -> SentryError {
+        switch source {
         case .httpRequest:
             switch apiError {
             case let .httpError(statusCode, data):
@@ -86,43 +155,29 @@ final class SentryFacade {
                 WebSocketError.unknownError(error: error)
             }
         }
-
-        SentrySDK.capture(error: sentryError) { [weak self] scope in
-            scope.setTag(
-                value: self?.getRequestId(headers: headers) ?? "null",
-                key: Constants.requestIdHeaderKey
-            )
-        }
-
-        guard needAssertOnErrors else { return }
-        assertionFailure(sentryError.localizedDescription)
-    }
-
-    func capture(warning: SentryEvent) {
-        var warningEvent = Event(level: .warning)
-        warningEvent.message = SentryMessage(formatted: "Unknown API error")
-        warningEvent.error = APIError.unknown(warning)
-
-        SentrySDK.capture(event: warningEvent)
-    }
-
-    func capture(message: String) {
-        SentrySDK.capture(message: message)
-    }
-
-    private func getEnvironment(from environment: GPEnvironment) -> String {
-        environment.rawValue
-    }
-
-    private func getRequestId(headers: [AnyHashable: Any]?) -> String? {
-        let typeCastedHeaders = headers as? [String: Any]
-        return typeCastedHeaders?[Constants.requestIdHeaderKey] as? String
     }
 }
 
 extension SentryFacade {
-    enum Constants {
+    enum Tags {
+        static let requestIdKey = "request_id"
+        static let psdkVersionKey = "myguava_psdk_version"
+    }
+
+    enum Context {
+        static let rootKey = "Payment Details"
+        static let paymentMethodKey = "Payment Method"
+        static let merchantNameKey = "Merchant Name"
+        static let deviceDataKey = "Device Data"
+        static let orderIdKey = "Order ID"
+    }
+
+    private enum Constants {
         static let dsnAddress = "https://1288b07e644cb33c9df799d59dfd1c50@o4507129772310528.ingest.de.sentry.io/4509802652434512"
         static let requestIdHeaderKey = "request-id"
+
+        static let singleReportErrors: Set<String> = [
+            WebSocketError.connectionFailed.localizedDescription
+        ]
     }
 }
