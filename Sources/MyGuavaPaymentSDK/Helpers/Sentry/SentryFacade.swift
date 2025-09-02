@@ -119,12 +119,12 @@ final class SentryFacade {
         switch source {
         case .httpRequest:
             switch apiError {
-            case let .httpError(statusCode, data):
+            case let .httpError(statusCode, message):
                 switch statusCode {
                 case 400...499:
-                    NetworkError.clientCode(statusCode)
+                    NetworkError.clientCode(code: statusCode, message: message)
                 case 500...599:
-                    NetworkError.serverCode(statusCode)
+                    NetworkError.serverCode(code: statusCode, message: message)
                 default:
                     NetworkError.unknownError(code: statusCode, error: nil)
                 }

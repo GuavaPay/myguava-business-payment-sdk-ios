@@ -45,8 +45,8 @@ enum DataError: SentryError {
 
 enum NetworkError: SentryError {
     case connectionFailed
-    case clientCode(Int)
-    case serverCode(Int)
+    case clientCode(code: Int, message: String)
+    case serverCode(code: Int, message: String)
     case unexpectedSuccessCode(Int)
     case invalidURL
     case invalidResponse
@@ -56,10 +56,10 @@ enum NetworkError: SentryError {
         switch self {
         case .connectionFailed:
             "Connection failed"
-        case .clientCode(let code):
-            "Client error status code: \(code)"
-        case .serverCode(let code):
-            "Server error status code: \(code)"
+        case let .clientCode(code, message):
+            "\(message) -> \(code)"
+        case let .serverCode(code, message):
+            "\(message) -> \(code)"
         case .unexpectedSuccessCode(let code):
             "Unexpected success status code: \(code)"
         case .invalidURL:

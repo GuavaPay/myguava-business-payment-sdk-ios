@@ -26,7 +26,7 @@ public enum APIError: Error {
 
     case invalidURL
     case invalidResponse
-    case httpError(statusCode: Int, data: Data?)
+    case httpError(statusCode: Int, message: String)
     case noData
     case connectionFailed
     case decodingError(Error)
@@ -130,7 +130,10 @@ final class APIClient {
                         }
 
                     default:
-                        let error = APIError.httpError(statusCode: statusCode, data: data)
+                        let method = request.httpMethod ?? "null"
+                        let link = request.url?.absoluteString ?? "null"
+                        let methodAndUrl = "\(method) \(link)"
+                        let error = APIError.httpError(statusCode: statusCode, message: methodAndUrl)
                         if !allowedErrorCodes.contains(statusCode) {
                             SentryFacade.shared.capture(apiError: error, headers: httpResponse.allHeaderFields)
                         }
