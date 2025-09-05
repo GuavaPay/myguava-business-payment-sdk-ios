@@ -122,24 +122,24 @@ public extension PaymentDelegate {
 /// A configuration object for customizing the payment flow.
 public struct PaymentConfig {
     /// Supported card schemes for payment.
-    public enum PaymentCardScheme {
-        case visa
-        case mastercard
-        case unionpay
-        case americanExpress
-        case dinersClub
+    public enum PaymentCardScheme: String {
+        case visa = "VISA"
+        case mastercard = "MASTERCARD"
+        case unionpay = "UNIONPAY"
+        case americanExpress = "AMERICAN_EXPRESS"
+        case dinersClub = "DINERS_CLUB"
     }
     /// Supported payment methods.
-    public enum PaymentMethod {
-        case applePay
-        case paymentCardBinding
-        case paymentCard
+    public enum PaymentMethod: String {
+        case applePay = "APPLE_PAY"
+        case paymentCardBinding = "PAYMENT_CARD_BINDING"
+        case paymentCard = "PAYMENT_CARD"
     }
     /// Categories of cards supported for the transaction.
-    public enum PaymentCardProductCategory {
-        case debit
-        case credit
-        case prepaid
+    public enum PaymentCardProductCategory: String {
+        case debit = "DEBIT"
+        case credit = "CREDIT"
+        case prepaid = "PREPAID"
     }
     /// The token used to initiate a payment session.
     public let sessionToken: String
@@ -206,7 +206,7 @@ public final class PaymentAssembly {
     /// - Returns: A ready-to-use `UIViewController` for the payment flow.
     public static func assemble(_ config: PaymentConfig, _ delegate: PaymentDelegate?) -> UIViewController {
         SentryFacade.shared.startSession(environment: config.environment, assertOnErrors: false)
-        SentryFacade.shared.addContext(SentryFacade.Context.orderIdKey, value: config.orderId)
+        setPaymentContext(for: config)
 
         let orderService = OrderServiceImpl()
         let pollingWorker = OrderStatusPollingWorker(
@@ -257,5 +257,21 @@ public final class PaymentAssembly {
         interactor.mainVC = viewController
 
         return viewController
+    }
+
+    private static func setPaymentContext(for config: PaymentConfig) {
+        SentryFacade.shared.addContext(SentryFacade.Context.orderIdKey, value: config.orderId)
+        SentryFacade.shared.addContext(
+            SentryFacade.Context.availablePaymentMethodsKey,
+            value: config.availablePaymentMethods.map { $0.rawValue }
+        )
+        SentryFacade.shared.addContext(
+            SentryFacade.Context.availableCardSchemesKey,
+            value: config.availableCardSchemes.map { $0.rawValue }
+        )
+        SentryFacade.shared.addContext(
+            SentryFacade.Context.availableCardProductsKey,
+            value: config.availableCardProductCategories.map { $0.rawValue }
+        )
     }
 }

@@ -57,9 +57,9 @@ enum NetworkError: SentryError {
         case .connectionFailed:
             "Connection failed"
         case let .clientCode(code, message):
-            "\(message) -> \(code)"
+            "\(code): \(message)"
         case let .serverCode(code, message):
-            "\(message) -> \(code)"
+            "\(code): \(message)"
         case .unexpectedSuccessCode(let code):
             "Unexpected success status code: \(code)"
         case .invalidURL:

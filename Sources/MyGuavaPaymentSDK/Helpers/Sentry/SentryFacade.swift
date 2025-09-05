@@ -166,6 +166,9 @@ extension SentryFacade {
 
     enum Context {
         static let rootKey = "Payment Details"
+        static let availablePaymentMethodsKey = "Payment Methods"
+        static let availableCardSchemesKey = "Card Schemes"
+        static let availableCardProductsKey = "Card Products"
         static let paymentMethodKey = "Payment Method"
         static let merchantNameKey = "Merchant Name"
         static let deviceDataKey = "Device Data"
